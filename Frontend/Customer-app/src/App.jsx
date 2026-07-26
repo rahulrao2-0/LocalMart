@@ -1,16 +1,23 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useState, useMemo } from 'react'
+import { ThemeProvider, CssBaseline } from '@mui/material'
+import { getTheme } from './theme'
+import HomePage from './HomePage/Homepage'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [themeMode, setThemeMode] = useState('light')
+
+  const theme = useMemo(() => getTheme(themeMode), [themeMode])
+
+  const toggleTheme = () => {
+    setThemeMode((prev) => (prev === 'light' ? 'dark' : 'light'))
+  }
 
   return (
-    <>
-    <h1>welocme to customer app</h1>
-    </>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <HomePage themeMode={themeMode} onToggleTheme={toggleTheme} />
+    </ThemeProvider>
   )
 }
 
