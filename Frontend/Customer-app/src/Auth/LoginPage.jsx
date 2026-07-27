@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -17,13 +18,14 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  PersonOutline,
+  PersonOutlined,
   LockOutlined,
   ArrowBack,
 } from "@mui/icons-material";
 
-export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackToHome, themeMode }) {
+export default function LoginPage({ themeMode }) {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +36,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
 
   const handleTogglePassword = () => setShowPassword(!showPassword);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -46,32 +48,69 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
 
     setLoading(true);
 
-    // Mock network request
-    setTimeout(() => {
-      // Retrieve users from local storage
-      const registeredUsers = JSON.parse(localStorage.getItem("localmart_users") || "[]");
-      const user = registeredUsers.find(
-        (u) => u.username.toLowerCase() === username.trim().toLowerCase()
-      );
+    try {
+      // Call backend api via fetch
+      const response = await fetch("http://localhost:3000/api/v1/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          pass: password,
+        }),
+      });
 
-      if (!user) {
-        setError("User does not exist. Please check your username or Sign Up.");
-        setLoading(false);
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed. Please check your credentials.");
       }
 
-      if (user.password !== password) {
-        setError("Incorrect password. Please try again.");
-        setLoading(false);
-        return;
-      }
-
+      // Success paths
       setSuccess("Logged in successfully! Redirecting...");
+      localStorage.setItem("localmart_current_user", JSON.stringify(data.user));
+      localStorage.setItem("localmart_token", data.accessToken);
+
       setTimeout(() => {
-        onLoginSuccess(user);
         setLoading(false);
+        // Use window.location.href to force reload so Navbar/HomePage reads the user from localStorage
+        window.location.href = "/";
       }, 1000);
-    }, 1200);
+
+    } catch (err) {
+      console.warn("Backend server not responding, falling back to localStorage mock:", err.message);
+
+      // Fallback implementation in case server is not running
+      setTimeout(() => {
+        const registeredUsers = JSON.parse(localStorage.getItem("localmart_users") || "[]");
+        const user = registeredUsers.find(
+          (u) => u.username.toLowerCase() === username.trim().toLowerCase()
+        );
+
+        if (!user) {
+          setError("User does not exist. Please check your username or Sign Up.");
+          setLoading(false);
+          return;
+        }
+
+        if (user.password !== password) {
+          setError("Incorrect password. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        setSuccess("Logged in successfully (Demo Mode)! Redirecting...");
+
+        const loggedInUser = { username: user.username, gmail: user.gmail };
+        localStorage.setItem("localmart_current_user", JSON.stringify(loggedInUser));
+
+        setTimeout(() => {
+          setLoading(false);
+          window.location.href = "/";
+        }, 1000);
+      }, 1000);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -80,7 +119,6 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
     setGoogleLoading(true);
 
     setTimeout(() => {
-      // Mock Google Auth details
       const googleUser = {
         username: "GoogleUser_" + Math.random().toString(36).substring(7),
         gmail: "user@gmail.com",
@@ -88,9 +126,11 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
       };
 
       setSuccess("Google Authentication successful!");
+      localStorage.setItem("localmart_current_user", JSON.stringify(googleUser));
+
       setTimeout(() => {
-        onLoginSuccess(googleUser);
         setGoogleLoading(false);
+        window.location.href = "/";
       }, 1000);
     }, 1500);
   };
@@ -139,7 +179,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
         {/* Back Button */}
         <Button
           startIcon={<ArrowBack />}
-          onClick={onBackToHome}
+          onClick={() => navigate("/")}
           sx={{
             mb: 3,
             color: "text.secondary",
@@ -161,13 +201,13 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
             border: "1px solid",
             borderColor: "divider",
             bgcolor: "background.paper",
-            boxShadow: themeMode === "dark" 
-              ? "0px 20px 40px rgba(0, 0, 0, 0.4)" 
+            boxShadow: themeMode === "dark"
+              ? "0px 20px 40px rgba(0, 0, 0, 0.4)"
               : "0px 20px 40px rgba(108, 93, 211, 0.06)",
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Logo / Header */}
+          {/* Header */}
           <Box sx={{ textAlign: "center", mb: 4 }}>
             <Box
               sx={{
@@ -218,7 +258,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonOutline color="action" />
+                      <PersonOutlined color="action" />
                     </InputAdornment>
                   ),
                 }}
@@ -336,7 +376,7 @@ export default function LoginPage({ onLoginSuccess, onNavigateToSignup, onBackTo
             <Typography variant="body2" color="text.secondary">
               Don't have an account?{" "}
               <Button
-                onClick={onNavigateToSignup}
+                onClick={() => navigate("/signup")}
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,

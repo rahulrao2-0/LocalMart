@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   AppBar,
   Toolbar,
@@ -44,6 +46,10 @@ export default function Navbar({
   const [anchorEl, setAnchorEl] = useState(null);
   const [userAnchorEl, setUserAnchorEl] = useState(null);
   const theme = useTheme();
+  const navigate = useNavigate();
+  const user = useSelector((state) => state.auth.user);
+
+  console.log("Current User in Navbar:", user);
 
   const handleModeChange = (event, newMode) => {
     if (newMode !== null && onModeChange) onModeChange(newMode);
@@ -279,7 +285,7 @@ export default function Navbar({
                 variant="contained"
                 color="primary"
                 size="small"
-                onClick={() => onNavigate("signup")}
+                onClick={() => navigate("/signup")}
                 sx={{
                   fontWeight: 700,
                   borderRadius: "10px",

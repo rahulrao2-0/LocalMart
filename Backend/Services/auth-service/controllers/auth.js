@@ -5,6 +5,8 @@ import { pool } from "../config/db.js";
 
 export const signup = async (req, res) => {
   const connection = await pool.getConnection();
+//   console.log("Signup Request Body:", req.body);
+console.log("Signup api hit");
 
   try {
     const { full_name, email, password } = req.body;
@@ -74,6 +76,8 @@ export const signup = async (req, res) => {
     );
 
     await connection.commit();
+
+    console.log("User registered successfully:", { id: userId, full_name, email });
 
     return res.status(201).json({
       success: true,

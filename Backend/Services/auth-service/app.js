@@ -7,9 +7,9 @@ import authRouter from "./routes/authRouter.js";
 import {connectDB} from "./config/db.js";
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
-connectDB();
+
 
 app.use(express.json())
 app.use(cookieParser())

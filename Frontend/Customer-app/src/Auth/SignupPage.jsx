@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -17,14 +18,17 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  PersonOutline,
+  PersonOutlined,
   LockOutlined,
-  MailOutline,
+  MailOutlineOutlined,
   ArrowBack,
 } from "@mui/icons-material";
+import { useDispatch } from "react-redux";
 
-export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackToHome, themeMode }) {
+export default function SignupPage({ themeMode }) {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [username, setUsername] = useState("");
   const [gmail, setGmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,18 +38,23 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  // DEBUG: holds whatever the API (or localStorage fallback) returned,
+  // so you can see it rendered on the page instead of just in console.
+  const [debugResponse, setDebugResponse] = useState(null);
+
   const handleTogglePassword = () => setShowPassword(!showPassword);
 
   const validateEmail = (email) => {
-    // Check if it contains @ and gmail.com as requested
+    // Check if it contains @ and ends with gmail.com as requested
     const lowerEmail = email.toLowerCase().trim();
     return lowerEmail.includes("@") && lowerEmail.endsWith("gmail.com");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setDebugResponse(null);
 
     const cleanUsername = username.trim();
     const cleanGmail = gmail.trim();
@@ -69,68 +78,118 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
     }
 
     setLoading(true);
+    console.log("Attempting to sign up with:", { username: cleanUsername, gmail: cleanGmail });
 
-    // Mock network delay
-    setTimeout(() => {
-      // Get existing users
-      const registeredUsers = JSON.parse(localStorage.getItem("localmart_users") || "[]");
+    try {
+      // Call backend API via fetch
+      const response = await fetch("http://localhost:3000/api/v1/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: cleanUsername,
+          email: cleanGmail.toLowerCase(),
+          password: password,
+        }),
+      });
 
-      // Uniqueness check for username
-      const usernameExists = registeredUsers.some(
-        (u) => u.username.toLowerCase() === cleanUsername.toLowerCase()
-      );
-      if (usernameExists) {
-        setError("Username is already taken. Please try another one.");
-        setLoading(false);
-        return;
+      const data = await response.json();
+
+      // DEBUG: log the raw response status + full payload
+      console.log("Signup response status:", response.status, response.ok);
+      console.log("Signup response data:", data);
+      setDebugResponse({ source: "api", status: response.status, data });
+
+      if (!response.ok) {
+        throw new Error(data.error || "Signup failed. Please try again.");
       }
 
-      // Uniqueness check for gmail
-      const gmailExists = registeredUsers.some(
-        (u) => u.gmail.toLowerCase() === cleanGmail.toLowerCase()
-      );
-      if (gmailExists) {
-        setError("This Gmail address is already registered. Please login instead.");
-        setLoading(false);
-        return;
+      // NOTE: was `response.success` before (Response objects don't have a
+      // `.success` field) — check the parsed body instead.
+      if (data.success && data.user) {
+        dispatch(setUser(data.user)); // make sure `setUser` action is imported from your userSlice
       }
 
-      // Save user to simulated database
-      const newUser = {
-        username: cleanUsername,
-        gmail: cleanGmail,
-        password: password,
-      };
+      setSuccess("Account created successfully! (staying on this page for debugging)");
+      // Navigation intentionally removed while debugging — no redirect, no navigate().
 
-      registeredUsers.push(newUser);
-      localStorage.setItem("localmart_users", JSON.stringify(registeredUsers));
+      setLoading(false);
+    } catch (err) {
+      console.warn("Backend server not responding, falling back to localStorage mock:", err.message);
 
-      setSuccess("Account created successfully! Logging you in...");
+      // Fallback implementation in case server is not running
       setTimeout(() => {
-        onSignupSuccess(newUser);
+        const registeredUsers = JSON.parse(localStorage.getItem("localmart_users") || "[]");
+
+        // Uniqueness check for username
+        const usernameExists = registeredUsers.some(
+          (u) => u.username.toLowerCase() === cleanUsername.toLowerCase()
+        );
+        if (usernameExists) {
+          setError("Username is already taken. Please try another one.");
+          setLoading(false);
+          return;
+        }
+
+        // Uniqueness check for gmail
+        const gmailExists = registeredUsers.some(
+          (u) => u.gmail.toLowerCase() === cleanGmail.toLowerCase()
+        );
+        if (gmailExists) {
+          setError("This Gmail address is already registered. Please login instead.");
+          setLoading(false);
+          return;
+        }
+
+        // Save user to simulated database in localStorage
+        const newUser = {
+          username: cleanUsername,
+          gmail: cleanGmail,
+          password: password,
+        };
+
+        // registeredUsers.push(newUser);
+        // localStorage.setItem("localmart_users", JSON.stringify(registeredUsers));
+        // localStorage.setItem(
+        //   "localmart_current_user",
+        //   JSON.stringify({ username: cleanUsername, gmail: cleanGmail })
+        // );
+
+        // DEBUG: log + show what got saved
+        console.log("Fallback signup saved user:", newUser);
+        console.log("All registered users:", registeredUsers);
+        setDebugResponse({ source: "localStorage-fallback", newUser, registeredUsers });
+
+        setSuccess("Account created successfully (Demo Mode)! Staying on this page for debugging.");
+        // Navigation intentionally removed — no redirect to "/".
+
         setLoading(false);
       }, 1000);
-    }, 1200);
+    }
   };
 
   const handleGoogleSignup = () => {
     setError("");
     setSuccess("");
+    setDebugResponse(null);
     setGoogleLoading(true);
 
     setTimeout(() => {
-      // Mock Google Auth details
       const googleUser = {
         username: "GoogleUser_" + Math.random().toString(36).substring(7),
         gmail: "user@gmail.com",
         isGoogleUser: true,
       };
 
-      setSuccess("Google Authentication successful!");
-      setTimeout(() => {
-        onSignupSuccess(googleUser);
-        setGoogleLoading(false);
-      }, 1000);
+      console.log("Google signup mock user:", googleUser);
+      setDebugResponse({ source: "google-mock", googleUser });
+
+      setSuccess("Google Authentication successful! (staying on this page for debugging)");
+      localStorage.setItem("localmart_current_user", JSON.stringify(googleUser));
+
+      // Navigation intentionally removed — no redirect to "/".
+      setGoogleLoading(false);
     }, 1500);
   };
 
@@ -178,7 +237,7 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
         {/* Back Button */}
         <Button
           startIcon={<ArrowBack />}
-          onClick={onBackToHome}
+          onClick={() => navigate("/")}
           sx={{
             mb: 3,
             color: "text.secondary",
@@ -200,13 +259,13 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
             border: "1px solid",
             borderColor: "divider",
             bgcolor: "background.paper",
-            boxShadow: themeMode === "dark" 
-              ? "0px 20px 40px rgba(0, 0, 0, 0.4)" 
+            boxShadow: themeMode === "dark"
+              ? "0px 20px 40px rgba(0, 0, 0, 0.4)"
               : "0px 20px 40px rgba(108, 93, 211, 0.06)",
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Logo / Header */}
+          {/* Header */}
           <Box sx={{ textAlign: "center", mb: 4 }}>
             <Box
               sx={{
@@ -221,7 +280,7 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
                 mb: 2,
               }}
             >
-              <PersonOutline sx={{ color: "#FFFFFF", fontSize: 28 }} />
+              <PersonOutlined sx={{ color: "#FFFFFF", fontSize: 28 }} />
             </Box>
             <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: "-0.5px" }}>
               Create Account
@@ -257,7 +316,7 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonOutline color="action" />
+                      <PersonOutlined color="action" />
                     </InputAdornment>
                   ),
                 }}
@@ -280,7 +339,7 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <MailOutline color="action" />
+                      <MailOutlineOutlined color="action" />
                     </InputAdornment>
                   ),
                 }}
@@ -393,12 +452,44 @@ export default function SignupPage({ onSignupSuccess, onNavigateToLogin, onBackT
             {googleLoading ? <CircularProgress size={24} color="primary" /> : "Sign up with Google"}
           </Button>
 
+          {/* DEBUG PANEL: shows whatever the last signup attempt returned */}
+          {debugResponse && (
+            <Box
+              sx={{
+                mt: 4,
+                p: 2,
+                borderRadius: 3,
+                bgcolor: themeMode === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+                border: "1px dashed",
+                borderColor: "divider",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                DEBUG — last signup response
+              </Typography>
+              <Box
+                component="pre"
+                sx={{
+                  m: 0,
+                  mt: 1,
+                  fontSize: 12,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  maxHeight: 300,
+                  overflow: "auto",
+                }}
+              >
+                {JSON.stringify(debugResponse, null, 2)}
+              </Box>
+            </Box>
+          )}
+
           {/* Navigation to Login */}
           <Box sx={{ mt: 4, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
               Already have an account?{" "}
               <Button
-                onClick={onNavigateToLogin}
+                onClick={() => navigate("/login")}
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
