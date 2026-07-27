@@ -193,7 +193,7 @@ const nearbyShops = [
 
 const categories = ["All", "Vegetables", "Furniture", "Electronics"];
 
-export default function HomePage({ themeMode, onToggleTheme }) {
+export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogout, onNavigate }) {
   const [mode, setMode] = useState("delivery"); // delivery | pickup
   const [location, setLocation] = useState("Vijay Nagar, Indore");
   const [searchQuery, setSearchQuery] = useState("");
@@ -393,6 +393,9 @@ export default function HomePage({ themeMode, onToggleTheme }) {
         onToggleTheme={onToggleTheme}
         onOpenShopReg={() => setIsShopRegOpen(true)}
         onLocationChange={setLocation}
+        currentUser={currentUser}
+        onLogout={onLogout}
+        onNavigate={onNavigate}
       />
 
       {/* HERO BANNER */}

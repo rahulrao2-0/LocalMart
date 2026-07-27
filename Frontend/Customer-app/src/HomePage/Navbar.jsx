@@ -13,6 +13,7 @@ import {
   MenuItem,
   useTheme,
   Tooltip,
+  Avatar,
 } from "@mui/material";
 import {
   LocationOn as LocationOnIcon,
@@ -36,8 +37,12 @@ export default function Navbar({
   onToggleTheme,
   onOpenShopReg,
   onLocationChange,
+  currentUser,
+  onLogout,
+  onNavigate,
 }) {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [userAnchorEl, setUserAnchorEl] = useState(null);
   const theme = useTheme();
 
   const handleModeChange = (event, newMode) => {
@@ -47,6 +52,19 @@ export default function Navbar({
   const handleLocationClick = (loc) => {
     if (onLocationChange) onLocationChange(loc);
     setAnchorEl(null);
+  };
+
+  const handleUserMenuClick = (event) => {
+    setUserAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserAnchorEl(null);
+  };
+
+  const handleLogoutClick = () => {
+    handleUserMenuClose();
+    if (onLogout) onLogout();
   };
 
   return (
@@ -174,10 +192,105 @@ export default function Navbar({
             </IconButton>
           </Tooltip>
 
-          {/* USER PROFILE */}
-          <IconButton sx={{ color: "text.secondary" }}>
-            <PersonOutlineIcon />
-          </IconButton>
+          {/* USER PROFILE & AUTHENTICATION */}
+          {currentUser ? (
+            <>
+              <Tooltip title={currentUser.username}>
+                <Box
+                  onClick={handleUserMenuClick}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    cursor: "pointer",
+                    p: 0.5,
+                    px: 1,
+                    borderRadius: 3,
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(108, 93, 211, 0.05)",
+                    },
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: "primary.main",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#FFFFFF",
+                      border: "2px solid",
+                      borderColor: "secondary.main",
+                    }}
+                  >
+                    {currentUser.username[0].toUpperCase()}
+                  </Avatar>
+                  <Typography
+                    variant="body2"
+                    fontWeight={700}
+                    sx={{
+                      display: { xs: "none", md: "block" },
+                      color: "text.primary",
+                    }}
+                  >
+                    {currentUser.username}
+                  </Typography>
+                </Box>
+              </Tooltip>
+              <Menu
+                anchorEl={userAnchorEl}
+                open={Boolean(userAnchorEl)}
+                onClose={handleUserMenuClose}
+                PaperProps={{
+                  sx: { borderRadius: 3, mt: 1, minWidth: 150 },
+                }}
+              >
+                <MenuItem disabled>
+                  <Typography variant="caption" color="text.secondary">
+                    Logged in as: <strong>{currentUser.gmail || "Google User"}</strong>
+                  </Typography>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={handleUserMenuClose}>My Orders</MenuItem>
+                <MenuItem onClick={handleUserMenuClose}>Shop Dashboard</MenuItem>
+                <Divider />
+                <MenuItem onClick={handleLogoutClick} sx={{ color: "error.main", fontWeight: 600 }}>
+                  Logout
+                </MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Button
+                variant="text"
+                color="primary"
+                size="small"
+                onClick={() => onNavigate("login")}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  px: 1.5,
+                }}
+              >
+                Login
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={() => onNavigate("signup")}
+                sx={{
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  px: 2,
+                  display: { xs: "none", sm: "inline-flex" },
+                }}
+              >
+                Sign Up
+              </Button>
+            </Box>
+          )}
 
           {/* SHOPPING CART */}
           <IconButton
