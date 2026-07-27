@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../features/auth/authSlice";
 import {
   AppBar,
   Toolbar,
   Box,
+  Stack,
   Typography,
   Button,
   IconButton,
@@ -16,6 +18,17 @@ import {
   useTheme,
   Tooltip,
   Avatar,
+  Divider,
+  ListItemIcon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
 } from "@mui/material";
 import {
   LocationOn as LocationOnIcon,
@@ -27,6 +40,12 @@ import {
   DarkModeOutlined as DarkModeOutlinedIcon,
   LightModeOutlined as LightModeOutlinedIcon,
   Store as StoreIcon,
+  HelpOutlineOutlined as HelpIcon,
+  ShoppingBagOutlined as OrdersIcon,
+  LogoutOutlined as LogoutIcon,
+  AccountCircleOutlined as AccountCircleIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 
 export default function Navbar({
@@ -39,17 +58,22 @@ export default function Navbar({
   onToggleTheme,
   onOpenShopReg,
   onLocationChange,
-  currentUser,
   onLogout,
   onNavigate,
 }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const [userAnchorEl, setUserAnchorEl] = useState(null);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [ordersDialogOpen, setOrdersDialogOpen] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
   const theme = useTheme();
   const navigate = useNavigate();
-  const user = useSelector((state) => state.auth.user);
+  const dispatch = useDispatch();
 
-  console.log("Current User in Navbar:", user);
+  // Get logged-in user from Redux store
+  const user = useSelector((state) => state.auth.user);
 
   const handleModeChange = (event, newMode) => {
     if (newMode !== null && onModeChange) onModeChange(newMode);
@@ -70,256 +94,388 @@ export default function Navbar({
 
   const handleLogoutClick = () => {
     handleUserMenuClose();
+    dispatch(logout());
     if (onLogout) onLogout();
   };
 
+  const getUserDisplayName = () => {
+    if (!user) return "";
+    return user.full_name || user.username || user.name || user.email || "Account";
+  };
+
+  const getUserEmail = () => {
+    if (!user) return "";
+    return user.email || user.gmail || "";
+  };
+
+  const getUserInitial = () => {
+    const name = getUserDisplayName();
+    return name ? name[0].toUpperCase() : "A";
+  };
+
   return (
-    <AppBar
-      position="sticky"
-      color="inherit"
-      elevation={0}
-      sx={{
-        backdropFilter: "blur(20px)",
-        backgroundColor: themeMode === "dark" ? "rgba(22, 25, 37, 0.75)" : "rgba(255, 255, 255, 0.8)",
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-      }}
-    >
-      <Toolbar sx={{ justifyContent: "space-between", py: 1, px: { xs: 1.5, md: 3 }, gap: { xs: 1, md: 2 } }}>
-        {/* LOGO */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, #6C5DD3 0%, #FF7551 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0px 4px 10px rgba(108, 93, 211, 0.25)",
-            }}
-          >
-            <StoreIcon sx={{ color: "#FFFFFF", fontSize: 20 }} />
-          </Box>
-          <Typography
-            variant="h6"
-            fontWeight={800}
-            sx={{
-              background: "linear-gradient(135deg, #6C5DD3 0%, #FF7551 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: "-0.5px",
-              display: { xs: "none", sm: "block" },
-            }}
-          >
-            LocalMart
-          </Typography>
-        </Box>
-
-        {/* LOCATION SELECTOR */}
-        <Button
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-          startIcon={<LocationOnIcon sx={{ color: "primary.main" }} />}
-          endIcon={<KeyboardArrowDownIcon fontSize="small" sx={{ color: "text.secondary" }} />}
-          color="inherit"
-          sx={{
-            textTransform: "none",
-            borderRadius: 3,
-            px: 1.5,
-            py: 0.5,
-            backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.04)" : "rgba(108, 93, 211, 0.04)",
-            "&:hover": {
-              backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(108, 93, 211, 0.08)",
-            },
-            maxWidth: { xs: 140, sm: 200 },
-          }}
-        >
-          <Box sx={{ textAlign: "left", overflow: "hidden" }}>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1 }}>
-              Deliver to
-            </Typography>
-            <Typography variant="body2" fontWeight={700} noWrap sx={{ color: "text.primary" }}>
-              {location}
+    <>
+      <AppBar
+        position="sticky"
+        color="inherit"
+        elevation={0}
+        sx={{
+          backdropFilter: "blur(20px)",
+          backgroundColor: themeMode === "dark" ? "rgba(22, 25, 37, 0.85)" : "rgba(255, 255, 255, 0.85)",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+        }}
+      >
+        <Toolbar sx={{ justifyContent: "space-between", py: 1, px: { xs: 1.5, md: 3 }, gap: { xs: 1, md: 2 } }}>
+          {/* LOGO */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              onClick={() => navigate("/")}
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #6C5DD3 0%, #FF7551 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0px 4px 10px rgba(108, 93, 211, 0.25)",
+                cursor: "pointer",
+              }}
+            >
+              <StoreIcon sx={{ color: "#FFFFFF", fontSize: 20 }} />
+            </Box>
+            <Typography
+              variant="h6"
+              fontWeight={800}
+              onClick={() => navigate("/")}
+              sx={{
+                background: "linear-gradient(135deg, #6C5DD3 0%, #FF7551 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.5px",
+                cursor: "pointer",
+                display: { xs: "none", sm: "block" },
+              }}
+            >
+              LocalMart
             </Typography>
           </Box>
-        </Button>
 
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-          <MenuItem onClick={() => handleLocationClick("Vijay Nagar, Indore")}>Vijay Nagar, Indore</MenuItem>
-          <MenuItem onClick={() => handleLocationClick("Palasia, Indore")}>Palasia, Indore</MenuItem>
-          <MenuItem onClick={() => handleLocationClick("Rajwada, Indore")}>Rajwada, Indore</MenuItem>
-          <MenuItem onClick={() => handleLocationClick("Bhawarkua, Indore")}>Bhawarkua, Indore</MenuItem>
-        </Menu>
-
-        {/* DELIVERY / PICKUP TOGGLE */}
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={handleModeChange}
-          size="small"
-          color="primary"
-          sx={{ display: { xs: "none", md: "inline-flex" } }}
-        >
-          <ToggleButton value="delivery" sx={{ textTransform: "none", px: 2.5 }}>
-            <LocalShippingIcon fontSize="small" sx={{ mr: 0.75 }} />
-            Home Delivery
-          </ToggleButton>
-          <ToggleButton value="pickup" sx={{ textTransform: "none", px: 2.5 }}>
-            <StorefrontIcon fontSize="small" sx={{ mr: 0.75 }} />
-            Store Pickup
-          </ToggleButton>
-        </ToggleButtonGroup>
-
-        {/* ACTIONS */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, md: 1 } }}>
-          {/* SELL BUTTON */}
+          {/* LOCATION SELECTOR */}
           <Button
-            variant="outlined"
-            color="primary"
-            size="small"
-            startIcon={<StoreIcon />}
-            onClick={onOpenShopReg}
+            onClick={(e) => setAnchorEl(e.currentTarget)}
+            startIcon={<LocationOnIcon sx={{ color: "primary.main" }} />}
+            endIcon={<KeyboardArrowDownIcon fontSize="small" sx={{ color: "text.secondary" }} />}
+            color="inherit"
             sx={{
-              display: { xs: "none", sm: "inline-flex" },
-              borderRadius: "10px",
-              fontWeight: 700,
-              borderWidth: "1.5px",
+              textTransform: "none",
+              borderRadius: 3,
+              px: 1.5,
+              py: 0.5,
+              backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.04)" : "rgba(108, 93, 211, 0.04)",
+              "&:hover": {
+                backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(108, 93, 211, 0.08)",
+              },
+              maxWidth: { xs: 130, sm: 200 },
             }}
           >
-            Sell
+            <Box sx={{ textAlign: "left", overflow: "hidden" }}>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1 }}>
+                Deliver to
+              </Typography>
+              <Typography variant="body2" fontWeight={700} noWrap sx={{ color: "text.primary" }}>
+                {location}
+              </Typography>
+            </Box>
           </Button>
 
-          {/* THEME TOGGLE */}
-          <Tooltip title={themeMode === "dark" ? "Light Mode" : "Dark Mode"}>
-            <IconButton onClick={onToggleTheme} sx={{ color: "text.secondary" }}>
-              {themeMode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
-            </IconButton>
-          </Tooltip>
+          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+            <MenuItem onClick={() => handleLocationClick("Vijay Nagar, Indore")}>Vijay Nagar, Indore</MenuItem>
+            <MenuItem onClick={() => handleLocationClick("Palasia, Indore")}>Palasia, Indore</MenuItem>
+            <MenuItem onClick={() => handleLocationClick("Rajwada, Indore")}>Rajwada, Indore</MenuItem>
+            <MenuItem onClick={() => handleLocationClick("Bhawarkua, Indore")}>Bhawarkua, Indore</MenuItem>
+          </Menu>
 
-          {/* USER PROFILE & AUTHENTICATION */}
-          {currentUser ? (
-            <>
-              <Tooltip title={currentUser.username}>
-                <Box
+          {/* DELIVERY / PICKUP TOGGLE */}
+          <ToggleButtonGroup
+            value={mode}
+            exclusive
+            onChange={handleModeChange}
+            size="small"
+            color="primary"
+            sx={{ display: { xs: "none", md: "inline-flex" } }}
+          >
+            <ToggleButton value="delivery" sx={{ textTransform: "none", px: 2 }}>
+              <LocalShippingIcon fontSize="small" sx={{ mr: 0.75 }} />
+              Home Delivery
+            </ToggleButton>
+            <ToggleButton value="pickup" sx={{ textTransform: "none", px: 2 }}>
+              <StorefrontIcon fontSize="small" sx={{ mr: 0.75 }} />
+              Store Pickup
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          {/* ACTIONS */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, md: 1 } }}>
+            {/* SELL BUTTON */}
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              startIcon={<StoreIcon />}
+              onClick={onOpenShopReg}
+              sx={{
+                display: { xs: "none", lg: "inline-flex" },
+                borderRadius: "10px",
+                fontWeight: 700,
+                borderWidth: "1.5px",
+              }}
+            >
+              Sell
+            </Button>
+
+            {/* THEME TOGGLE */}
+            <Tooltip title={themeMode === "dark" ? "Light Mode" : "Dark Mode"}>
+              <IconButton onClick={onToggleTheme} sx={{ color: "text.secondary" }}>
+                {themeMode === "dark" ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+              </IconButton>
+            </Tooltip>
+
+            {/* USER PROFILE / AUTH BUTTONS */}
+            {user ? (
+              <>
+                {/* Account Button (Desktop & Mobile) */}
+                <Button
                   onClick={handleUserMenuClick}
+                  endIcon={<KeyboardArrowDownIcon />}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    cursor: "pointer",
-                    p: 0.5,
-                    px: 1,
                     borderRadius: 3,
-                    transition: "all 0.2s ease",
+                    px: { xs: 1, sm: 1.5 },
+                    py: 0.5,
+                    textTransform: "none",
+                    backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(108, 93, 211, 0.06)",
                     "&:hover": {
-                      backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(108, 93, 211, 0.05)",
+                      backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(108, 93, 211, 0.12)",
                     },
                   }}
                 >
-                  <Avatar
-                    sx={{
-                      width: 32,
-                      height: 32,
-                      bgcolor: "primary.main",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: "#FFFFFF",
-                      border: "2px solid",
-                      borderColor: "secondary.main",
-                    }}
-                  >
-                    {currentUser.username[0].toUpperCase()}
-                  </Avatar>
-                  <Typography
-                    variant="body2"
-                    fontWeight={700}
-                    sx={{
-                      display: { xs: "none", md: "block" },
-                      color: "text.primary",
-                    }}
-                  >
-                    {currentUser.username}
-                  </Typography>
-                </Box>
-              </Tooltip>
-              <Menu
-                anchorEl={userAnchorEl}
-                open={Boolean(userAnchorEl)}
-                onClose={handleUserMenuClose}
-                PaperProps={{
-                  sx: { borderRadius: 3, mt: 1, minWidth: 150 },
-                }}
-              >
-                <MenuItem disabled>
-                  <Typography variant="caption" color="text.secondary">
-                    Logged in as: <strong>{currentUser.gmail || "Google User"}</strong>
-                  </Typography>
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleUserMenuClose}>My Orders</MenuItem>
-                <MenuItem onClick={handleUserMenuClose}>Shop Dashboard</MenuItem>
-                <Divider />
-                <MenuItem onClick={handleLogoutClick} sx={{ color: "error.main", fontWeight: 600 }}>
-                  Logout
-                </MenuItem>
-              </Menu>
-            </>
-          ) : (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Button
-                variant="text"
-                color="primary"
-                size="small"
-                onClick={() => onNavigate("login")}
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: "10px",
-                  px: 1.5,
-                }}
-              >
-                Login
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                onClick={() => navigate("/signup")}
-                sx={{
-                  fontWeight: 700,
-                  borderRadius: "10px",
-                  px: 2,
-                  display: { xs: "none", sm: "inline-flex" },
-                }}
-              >
-                Sign Up
-              </Button>
-            </Box>
-          )}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Avatar
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: "primary.main",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#FFFFFF",
+                      }}
+                    >
+                      {getUserInitial()}
+                    </Avatar>
+                    <Box sx={{ textAlign: "left", display: { xs: "none", sm: "block" } }}>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1 }}>
+                        Account
+                      </Typography>
+                      <Typography variant="body2" fontWeight={700} noWrap sx={{ color: "text.primary", maxWidth: 100 }}>
+                        {getUserDisplayName()}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Button>
 
-          {/* SHOPPING CART */}
-          <IconButton
-            onClick={onCartToggle}
-            sx={{
-              backgroundColor: "primary.main",
-              color: "#FFFFFF",
-              "&:hover": {
-                backgroundColor: "primary.dark",
-                transform: "scale(1.05)",
-              },
-              boxShadow: "0px 4px 10px rgba(108, 93, 211, 0.2)",
-              width: 40,
-              height: 40,
-              transition: "all 0.2s ease",
-            }}
-          >
-            <Badge badgeContent={cartCount} color="secondary" overlap="circular">
-              <ShoppingCartOutlinedIcon fontSize="small" />
-            </Badge>
-          </IconButton>
-        </Box>
-      </Toolbar>
-    </AppBar>
+                {/* Account Dropdown Menu with requested 4 buttons */}
+                <Menu
+                  anchorEl={userAnchorEl}
+                  open={Boolean(userAnchorEl)}
+                  onClose={handleUserMenuClose}
+                  PaperProps={{
+                    sx: {
+                      borderRadius: 3,
+                      mt: 1,
+                      minWidth: 220,
+                      boxShadow: "0px 10px 30px rgba(0,0,0,0.15)",
+                      p: 0.5,
+                    },
+                  }}
+                >
+                  {/* Account Header */}
+                  <Box sx={{ px: 2, py: 1.5 }}>
+                    <Typography variant="subtitle2" fontWeight={700} color="text.primary">
+                      {getUserDisplayName()}
+                    </Typography>
+                    {getUserEmail() && (
+                      <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                        {getUserEmail()}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Divider sx={{ my: 0.5 }} />
+
+                  {/* 1. Profile */}
+                  <MenuItem onClick={() => { handleUserMenuClose(); setProfileDialogOpen(true); }}>
+                    <ListItemIcon>
+                      <AccountCircleIcon fontSize="small" color="primary" />
+                    </ListItemIcon>
+                    <Typography variant="body2" fontWeight={600}>Profile</Typography>
+                  </MenuItem>
+
+                  {/* 2. My Orders (4th button added: Project Relevant) */}
+                  <MenuItem onClick={() => { handleUserMenuClose(); setOrdersDialogOpen(true); }}>
+                    <ListItemIcon>
+                      <OrdersIcon fontSize="small" color="primary" />
+                    </ListItemIcon>
+                    <Typography variant="body2" fontWeight={600}>My Orders</Typography>
+                  </MenuItem>
+
+                  {/* 3. Help */}
+                  <MenuItem onClick={() => { handleUserMenuClose(); setHelpDialogOpen(true); }}>
+                    <ListItemIcon>
+                      <HelpIcon fontSize="small" color="primary" />
+                    </ListItemIcon>
+                    <Typography variant="body2" fontWeight={600}>Help & Support</Typography>
+                  </MenuItem>
+
+                  <Divider sx={{ my: 0.5 }} />
+
+                  {/* 4. Logout */}
+                  <MenuItem onClick={handleLogoutClick} sx={{ color: "error.main" }}>
+                    <ListItemIcon>
+                      <LogoutIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <Typography variant="body2" fontWeight={700}>Logout</Typography>
+                  </MenuItem>
+                </Menu>
+              </>
+            ) : (
+              /* Hide Login/Signup if user logged in, render only when logged out */
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Button
+                  variant="text"
+                  color="primary"
+                  size="small"
+                  onClick={() => navigate("/login")}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: "10px",
+                    px: 1.5,
+                  }}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={() => navigate("/signup")}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: "10px",
+                    px: 2,
+                    display: { xs: "none", sm: "inline-flex" },
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </Box>
+            )}
+
+            {/* SHOPPING CART BUTTON */}
+            <IconButton
+              onClick={onCartToggle}
+              sx={{
+                backgroundColor: "primary.main",
+                color: "#FFFFFF",
+                "&:hover": {
+                  backgroundColor: "primary.dark",
+                  transform: "scale(1.05)",
+                },
+                boxShadow: "0px 4px 10px rgba(108, 93, 211, 0.2)",
+                width: 40,
+                height: 40,
+                transition: "all 0.2s ease",
+              }}
+            >
+              <Badge badgeContent={cartCount} color="secondary" overlap="circular">
+                <ShoppingCartOutlinedIcon fontSize="small" />
+              </Badge>
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Profile Dialog */}
+      <Dialog open={profileDialogOpen} onClose={() => setProfileDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 800, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          User Profile
+          <IconButton onClick={() => setProfileDialogOpen(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ textAlign: "center", py: 2 }}>
+            <Avatar sx={{ width: 64, height: 64, mx: "auto", mb: 2, bgcolor: "primary.main", fontSize: 28, fontWeight: 700 }}>
+              {getUserInitial()}
+            </Avatar>
+            <Typography variant="h6" fontWeight={700}>{getUserDisplayName()}</Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>{getUserEmail()}</Typography>
+            <Box sx={{ mt: 3, p: 2, borderRadius: 3, bgcolor: "background.default", textAlign: "left" }}>
+              <Typography variant="caption" color="text.secondary" display="block">Account Type</Typography>
+              <Typography variant="body2" fontWeight={600} gutterBottom>Customer</Typography>
+              <Typography variant="caption" color="text.secondary" display="block">Delivery Location</Typography>
+              <Typography variant="body2" fontWeight={600}>{location}</Typography>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProfileDialogOpen(false)} variant="contained" sx={{ borderRadius: 3 }}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Help Dialog */}
+      <Dialog open={helpDialogOpen} onClose={() => setHelpDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 800, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          Help & Support
+          <IconButton onClick={() => setHelpDialogOpen(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Need help with your local orders or delivery? We are here to assist you 24/7.
+          </Typography>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Box sx={{ p: 2, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+              <Typography variant="subtitle2" fontWeight={700}>📞 Customer Helpline</Typography>
+              <Typography variant="body2" color="text.secondary">+91 1800-LOCAL-MART</Typography>
+            </Box>
+            <Box sx={{ p: 2, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+              <Typography variant="subtitle2" fontWeight={700}>✉️ Email Support</Typography>
+              <Typography variant="body2" color="text.secondary">support@localmart.in</Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHelpDialogOpen(false)} variant="contained" sx={{ borderRadius: 3 }}>Done</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* My Orders Dialog */}
+      <Dialog open={ordersDialogOpen} onClose={() => setOrdersDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4, p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 800, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          My Orders
+          <IconButton onClick={() => setOrdersDialogOpen(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ textAlign: "center", py: 3 }}>
+            <OrdersIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1, opacity: 0.5 }} />
+            <Typography variant="h6" fontWeight={700} gutterBottom>No Active Orders</Typography>
+            <Typography variant="body2" color="text.secondary">
+              When you place an order from local shops near you, your live tracking and order history will appear here.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOrdersDialogOpen(false)} variant="contained" sx={{ borderRadius: 3 }}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

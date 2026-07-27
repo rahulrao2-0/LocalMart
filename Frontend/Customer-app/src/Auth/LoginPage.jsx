@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setUser } from "../features/auth/authSlice";
 import {
   Box,
   Container,
@@ -26,6 +28,7 @@ import {
 export default function LoginPage({ themeMode }) {
   const theme = useTheme();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -49,67 +52,34 @@ export default function LoginPage({ themeMode }) {
     setLoading(true);
 
     try {
-      // Call backend api via fetch
-      const response = await fetch("http://localhost:3000/api/v1/login", {
+      const response = await fetch("http://localhost:3000/api/v1/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          username: username.trim(),
-          pass: password,
+          email: username.trim().toLowerCase(),
+          password: password,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Login failed. Please check your credentials.");
+        throw new Error(data.error || data.message || "Login failed. Please check your credentials.");
       }
 
-      // Success paths
-      setSuccess("Logged in successfully! Redirecting...");
-      localStorage.setItem("localmart_current_user", JSON.stringify(data.user));
-      localStorage.setItem("localmart_token", data.accessToken);
+      setSuccess("Logged in successfully!");
+      dispatch(setUser(data.user || { full_name: username, email: username }));
 
       setTimeout(() => {
         setLoading(false);
-        // Use window.location.href to force reload so Navbar/HomePage reads the user from localStorage
-        window.location.href = "/";
+        navigate("/");
       }, 1000);
 
     } catch (err) {
-      console.warn("Backend server not responding, falling back to localStorage mock:", err.message);
-
-      // Fallback implementation in case server is not running
-      setTimeout(() => {
-        const registeredUsers = JSON.parse(localStorage.getItem("localmart_users") || "[]");
-        const user = registeredUsers.find(
-          (u) => u.username.toLowerCase() === username.trim().toLowerCase()
-        );
-
-        if (!user) {
-          setError("User does not exist. Please check your username or Sign Up.");
-          setLoading(false);
-          return;
-        }
-
-        if (user.password !== password) {
-          setError("Incorrect password. Please try again.");
-          setLoading(false);
-          return;
-        }
-
-        setSuccess("Logged in successfully (Demo Mode)! Redirecting...");
-
-        const loggedInUser = { username: user.username, gmail: user.gmail };
-        localStorage.setItem("localmart_current_user", JSON.stringify(loggedInUser));
-
-        setTimeout(() => {
-          setLoading(false);
-          window.location.href = "/";
-        }, 1000);
-      }, 1000);
+      setError(err.message || "Login failed.");
+      setLoading(false);
     }
   };
 
@@ -120,19 +90,19 @@ export default function LoginPage({ themeMode }) {
 
     setTimeout(() => {
       const googleUser = {
-        username: "GoogleUser_" + Math.random().toString(36).substring(7),
-        gmail: "user@gmail.com",
+        full_name: "Google User",
+        email: "user@gmail.com",
         isGoogleUser: true,
       };
 
       setSuccess("Google Authentication successful!");
-      localStorage.setItem("localmart_current_user", JSON.stringify(googleUser));
+      dispatch(setUser(googleUser));
 
       setTimeout(() => {
         setGoogleLoading(false);
-        window.location.href = "/";
+        navigate("/");
       }, 1000);
-    }, 1500);
+    }, 1000);
   };
 
   return (

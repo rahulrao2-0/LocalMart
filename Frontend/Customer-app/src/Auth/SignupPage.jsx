@@ -24,6 +24,7 @@ import {
   ArrowBack,
 } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
+import { setUser } from "../features/auth/authSlice";
 
 export default function SignupPage({ themeMode }) {
   const theme = useTheme();
@@ -38,14 +39,9 @@ export default function SignupPage({ themeMode }) {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // DEBUG: holds whatever the API (or localStorage fallback) returned,
-  // so you can see it rendered on the page instead of just in console.
-  const [debugResponse, setDebugResponse] = useState(null);
-
   const handleTogglePassword = () => setShowPassword(!showPassword);
 
   const validateEmail = (email) => {
-    // Check if it contains @ and ends with gmail.com as requested
     const lowerEmail = email.toLowerCase().trim();
     return lowerEmail.includes("@") && lowerEmail.endsWith("gmail.com");
   };
@@ -54,34 +50,28 @@ export default function SignupPage({ themeMode }) {
     e.preventDefault();
     setError("");
     setSuccess("");
-    setDebugResponse(null);
 
     const cleanUsername = username.trim();
     const cleanGmail = gmail.trim();
 
-    // Basic fields validation
     if (!cleanUsername || !cleanGmail || !password) {
       setError("Please fill in all fields.");
       return;
     }
 
-    // Password validation (at least 4 characters)
     if (password.length < 4) {
       setError("Password must be at least 4 characters long.");
       return;
     }
 
-    // Email validation (contain @ and gmail.com)
     if (!validateEmail(cleanGmail)) {
       setError("Please enter a valid Gmail address (e.g., user@gmail.com).");
       return;
     }
 
     setLoading(true);
-    console.log("Attempting to sign up with:", { username: cleanUsername, gmail: cleanGmail });
 
     try {
-      // Call backend API via fetch
       const response = await fetch("http://localhost:3000/api/v1/auth/signup", {
         method: "POST",
         headers: {
@@ -96,101 +86,45 @@ export default function SignupPage({ themeMode }) {
 
       const data = await response.json();
 
-      // DEBUG: log the raw response status + full payload
-      console.log("Signup response status:", response.status, response.ok);
-      console.log("Signup response data:", data);
-      setDebugResponse({ source: "api", status: response.status, data });
-
       if (!response.ok) {
-        throw new Error(data.error || "Signup failed. Please try again.");
+        throw new Error(data.error || data.message || "Signup failed. Please try again.");
       }
 
-      // NOTE: was `response.success` before (Response objects don't have a
-      // `.success` field) — check the parsed body instead.
-      if (data.success && data.user) {
-        dispatch(setUser(data.user)); // make sure `setUser` action is imported from your userSlice
-      }
+      // Store user in Redux store
+      const userData = data.user || { full_name: cleanUsername, email: cleanGmail };
+      dispatch(setUser(userData));
 
-      setSuccess("Account created successfully! (staying on this page for debugging)");
-      // Navigation intentionally removed while debugging — no redirect, no navigate().
-
-      setLoading(false);
-    } catch (err) {
-      console.warn("Backend server not responding, falling back to localStorage mock:", err.message);
-
-      // Fallback implementation in case server is not running
+      setSuccess("Account created successfully!");
       setTimeout(() => {
-        const registeredUsers = JSON.parse(localStorage.getItem("localmart_users") || "[]");
-
-        // Uniqueness check for username
-        const usernameExists = registeredUsers.some(
-          (u) => u.username.toLowerCase() === cleanUsername.toLowerCase()
-        );
-        if (usernameExists) {
-          setError("Username is already taken. Please try another one.");
-          setLoading(false);
-          return;
-        }
-
-        // Uniqueness check for gmail
-        const gmailExists = registeredUsers.some(
-          (u) => u.gmail.toLowerCase() === cleanGmail.toLowerCase()
-        );
-        if (gmailExists) {
-          setError("This Gmail address is already registered. Please login instead.");
-          setLoading(false);
-          return;
-        }
-
-        // Save user to simulated database in localStorage
-        const newUser = {
-          username: cleanUsername,
-          gmail: cleanGmail,
-          password: password,
-        };
-
-        // registeredUsers.push(newUser);
-        // localStorage.setItem("localmart_users", JSON.stringify(registeredUsers));
-        // localStorage.setItem(
-        //   "localmart_current_user",
-        //   JSON.stringify({ username: cleanUsername, gmail: cleanGmail })
-        // );
-
-        // DEBUG: log + show what got saved
-        console.log("Fallback signup saved user:", newUser);
-        console.log("All registered users:", registeredUsers);
-        setDebugResponse({ source: "localStorage-fallback", newUser, registeredUsers });
-
-        setSuccess("Account created successfully (Demo Mode)! Staying on this page for debugging.");
-        // Navigation intentionally removed — no redirect to "/".
-
         setLoading(false);
+        navigate("/");
       }, 1000);
+    } catch (err) {
+      setError(err.message || "Something went wrong during signup.");
+      setLoading(false);
     }
   };
 
   const handleGoogleSignup = () => {
     setError("");
     setSuccess("");
-    setDebugResponse(null);
     setGoogleLoading(true);
 
     setTimeout(() => {
       const googleUser = {
-        username: "GoogleUser_" + Math.random().toString(36).substring(7),
-        gmail: "user@gmail.com",
+        full_name: "Google User",
+        email: "user@gmail.com",
         isGoogleUser: true,
       };
 
-      console.log("Google signup mock user:", googleUser);
-      setDebugResponse({ source: "google-mock", googleUser });
-
-      setSuccess("Google Authentication successful! (staying on this page for debugging)");
-      localStorage.setItem("localmart_current_user", JSON.stringify(googleUser));
-
-      // Navigation intentionally removed — no redirect to "/".
-      setGoogleLoading(false);
-    }, 1500);
+      dispatch(setUser(googleUser));
+      setSuccess("Google Authentication successful!");
+      
+      setTimeout(() => {
+        setGoogleLoading(false);
+        navigate("/");
+      }, 1000);
+    }, 1000);
   };
 
   return (
@@ -452,37 +386,7 @@ export default function SignupPage({ themeMode }) {
             {googleLoading ? <CircularProgress size={24} color="primary" /> : "Sign up with Google"}
           </Button>
 
-          {/* DEBUG PANEL: shows whatever the last signup attempt returned */}
-          {debugResponse && (
-            <Box
-              sx={{
-                mt: 4,
-                p: 2,
-                borderRadius: 3,
-                bgcolor: themeMode === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-                border: "1px dashed",
-                borderColor: "divider",
-              }}
-            >
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                DEBUG — last signup response
-              </Typography>
-              <Box
-                component="pre"
-                sx={{
-                  m: 0,
-                  mt: 1,
-                  fontSize: 12,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  maxHeight: 300,
-                  overflow: "auto",
-                }}
-              >
-                {JSON.stringify(debugResponse, null, 2)}
-              </Box>
-            </Box>
-          )}
+
 
           {/* Navigation to Login */}
           <Box sx={{ mt: 4, textAlign: "center" }}>
