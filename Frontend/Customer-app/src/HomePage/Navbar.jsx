@@ -314,15 +314,15 @@ export default function Navbar({
                   <Divider sx={{ my: 0.5 }} />
 
                   {/* 1. Profile */}
-                  <MenuItem onClick={() => { handleUserMenuClose(); setProfileDialogOpen(true); }}>
+                  <MenuItem onClick={() => { handleUserMenuClose(); navigate("/profile"); }}>
                     <ListItemIcon>
                       <AccountCircleIcon fontSize="small" color="primary" />
                     </ListItemIcon>
                     <Typography variant="body2" fontWeight={600}>Profile</Typography>
                   </MenuItem>
 
-                  {/* 2. My Orders (4th button added: Project Relevant) */}
-                  <MenuItem onClick={() => { handleUserMenuClose(); setOrdersDialogOpen(true); }}>
+                  {/* 2. My Orders */}
+                  <MenuItem onClick={() => { handleUserMenuClose(); navigate("/orders"); }}>
                     <ListItemIcon>
                       <OrdersIcon fontSize="small" color="primary" />
                     </ListItemIcon>
@@ -381,26 +381,14 @@ export default function Navbar({
               </Box>
             )}
 
-            {/* SHOPPING CART BUTTON */}
-            <IconButton
-              onClick={onCartToggle}
-              sx={{
-                backgroundColor: "primary.main",
-                color: "#FFFFFF",
-                "&:hover": {
-                  backgroundColor: "primary.dark",
-                  transform: "scale(1.05)",
-                },
-                boxShadow: "0px 4px 10px rgba(108, 93, 211, 0.2)",
-                width: 40,
-                height: 40,
-                transition: "all 0.2s ease",
-              }}
-            >
-              <Badge badgeContent={cartCount} color="secondary" overlap="circular">
-                <ShoppingCartOutlinedIcon fontSize="small" />
-              </Badge>
-            </IconButton>
+            {/* CART BUTTON (Navigates to Dedicated /cart page) */}
+            <Tooltip title="View Cart">
+              <IconButton onClick={() => navigate("/cart")} sx={{ color: "text.primary" }}>
+                <Badge badgeContent={cartCount} color="primary">
+                  <ShoppingCartOutlinedIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>

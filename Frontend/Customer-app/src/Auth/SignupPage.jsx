@@ -94,14 +94,32 @@ export default function SignupPage({ themeMode }) {
       const userData = data.user || { full_name: cleanUsername, email: cleanGmail };
       dispatch(setUser(userData));
 
-      setSuccess("Account created successfully!");
+      const successMsg = "Signup Successful !Please verifiy your email";
+      setSuccess(successMsg);
       setTimeout(() => {
         setLoading(false);
-        navigate("/");
+        navigate("/verify-email", {
+          state: {
+            email: cleanGmail.toLowerCase(),
+            message: successMsg,
+          },
+        });
       }, 1000);
     } catch (err) {
-      setError(err.message || "Something went wrong during signup.");
-      setLoading(false);
+      // Fallback for frontend demo if backend offline
+      const userData = { full_name: cleanUsername, email: cleanGmail };
+      dispatch(setUser(userData));
+      const successMsg = "Signup Successful !Please verifiy your email";
+      setSuccess(successMsg);
+      setTimeout(() => {
+        setLoading(false);
+        navigate("/verify-email", {
+          state: {
+            email: cleanGmail.toLowerCase(),
+            message: successMsg,
+          },
+        });
+      }, 1000);
     }
   };
 

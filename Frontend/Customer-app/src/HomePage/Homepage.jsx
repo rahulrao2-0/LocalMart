@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Container,
@@ -193,7 +194,8 @@ const nearbyShops = [
 
 const categories = ["All", "Vegetables", "Furniture", "Electronics"];
 
-export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogout, onNavigate }) {
+export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogout, onNavigate, cart = [], onAddToCart }) {
+  const navigate = useNavigate();
   const [mode, setMode] = useState("delivery"); // delivery | pickup
   const [location, setLocation] = useState("Vijay Nagar, Indore");
   const [searchQuery, setSearchQuery] = useState("");
@@ -203,7 +205,6 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   // Cart State
-  const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Seller registration form state
@@ -758,7 +759,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
                     subtitle="Direct from nearby farms & local grocery stores"
                     products={vegetableProducts}
                     onAddToCart={handleAddToCart}
-                    onProductClick={setSelectedProduct}
+                    onProductClick={(p) => navigate(`/product/${p.id}`)}
                     mode={mode}
                     onSeeAll={() => setSelectedCategory("Vegetables")}
                   />
@@ -771,7 +772,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
                     subtitle="Handcrafted tables, chairs, and bookshelves from local workshops"
                     products={furnitureProducts}
                     onAddToCart={handleAddToCart}
-                    onProductClick={setSelectedProduct}
+                    onProductClick={(p) => navigate(`/product/${p.id}`)}
                     mode={mode}
                     onSeeAll={() => setSelectedCategory("Furniture")}
                   />
@@ -784,7 +785,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
                     subtitle="Compare specs & prices at tech stores near you"
                     products={electronicsProducts}
                     onAddToCart={handleAddToCart}
-                    onProductClick={setSelectedProduct}
+                    onProductClick={(p) => navigate(`/product/${p.id}`)}
                     mode={mode}
                     onSeeAll={() => setSelectedCategory("Electronics")}
                   />
