@@ -6,6 +6,8 @@ import {storeOTP} from "../services/otp.service.js";
 import {getOTP} from "../services/otp.service.js";
 import {deleteOTP} from "../services/otp.service.js";
 import sendEmail from "../services/sendEmail.js";
+import { setAuthCookies } from "../utils/cookie.js";
+import { createAccessToken, createRefreshToken, verifyAccessToken } from "../utils/jwt.js";
 
 
 export const signup = async (req, res) => {
@@ -85,6 +87,7 @@ console.log("Signup api hit");
     console.log("User registered successfully:", { id: userId, full_name, email });
 
     const otp = generateOtp();
+    console.log(`Generated OTP for user ${userId}:`, otp);
     await storeOTP(email, otp);
      
     await sendEmail({
@@ -120,7 +123,18 @@ console.log("Signup api hit");
   </html>`,
     });
 
-    console.log(`OTP for user ${userId} stored in Redis:`, otp);
+    console.log(`OTP for user ${email} stored in Redis:`, otp);
+
+    const payload = {
+      userId: userId,
+      email: email,
+      roles: ["CUSTOMER"],
+    };
+
+    const accessToken = createAccessToken(payload);
+    const refreshToken = createRefreshToken({ userId });
+
+    await setAuthCookies(res, accessToken, refreshToken);
 
     return res.status(201).json({
       success: true,
@@ -214,6 +228,8 @@ export const verifyEmail = async (req, res) => {
           message: "User record not found.",
         });
       }
+      
+      
 
       const userData = rows[0];
 
@@ -228,7 +244,19 @@ export const verifyEmail = async (req, res) => {
         }
       }
       
-      // 3. Clear the OTP from Redis so it cannot be reused
+      // 3. Generate Auth Tokens & Set Cookies
+      const payload = {
+        userId: userData.id,
+        email: userData.email,
+        roles: userData.roles || ["CUSTOMER"],
+      };
+
+      const accessToken = createAccessToken(payload);
+      const refreshToken = createRefreshToken({ userId: userData.id });
+
+      setAuthCookies(res, accessToken, refreshToken);
+
+      // 4. Clear the OTP from Redis so it cannot be reused
       await deleteOTP(email);
       
       return res.status(200).json({
@@ -238,4 +266,56 @@ export const verifyEmail = async (req, res) => {
       });
     }
 
-}
+};
+
+export const me = async (req, res) => {
+  try {
+    const token = req.cookies.accessToken;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated. No access token provided.",
+      });
+    }
+
+    const decoded = verifyAccessToken(token);
+
+    const [rows] = await pool.query(
+      `SELECT u.id, u.full_name, u.email, u.is_email_verified, 
+              COALESCE(JSON_ARRAYAGG(r.name), JSON_ARRAY('CUSTOMER')) AS roles
+       FROM users u
+       LEFT JOIN user_roles ur ON u.id = ur.user_id
+       LEFT JOIN roles r ON ur.role_id = r.id
+       WHERE u.id = ?
+       GROUP BY u.id`,
+      [decoded.userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    const user = rows[0];
+    if (typeof user.roles === "string") {
+      try {
+        user.roles = JSON.parse(user.roles);
+      } catch (e) {
+        user.roles = ["CUSTOMER"];
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired access token.",
+    });
+  }
+};

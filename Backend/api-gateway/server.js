@@ -14,8 +14,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// http-proxy-middleware v4 fix: Use pathFilter instead of mounting app.use('/api/v1/auth', ...)
-// so that /api/v1/auth prefix is preserved when forwarded to target http://localhost:3001
+// Proxy for auth API endpoints (/api/v1/auth)
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/auth",
@@ -23,13 +22,9 @@ app.use(
     changeOrigin: true,
   })
 );
-app.use(
-  createProxyMiddleware({
-    pathFilter: "/api/v1/auth",
-    target: "http://localhost:3001",
-    changeOrigin: true,
-  })
-);
+
+
+
 
 app.listen(3000, () => {
   console.log("API Gateway running on port 3000");

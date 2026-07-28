@@ -477,7 +477,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
       <Container maxWidth="lg" sx={{ py: 2 }}>
         <Grid container spacing={4}>
           {/* LEFT SIDEBAR: MAP & DISCOVERY */}
-          <Grid item xs={12} md={4} sx={{ order: { xs: 2, md: 1 } }}>
+          <Grid size={{ xs: 12, md: 4 }} sx={{ order: { xs: 2, md: 1 } }}>
             {/* STATS BANNER */}
             <Paper
               variant="outlined"
@@ -500,7 +500,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
               </Stack>
               <Grid container spacing={2}>
                 {nearbyShops.map((shop) => (
-                  <Grid item xs={6} key={shop.name}>
+                  <Grid size={6} key={shop.name}>
                     <Paper
                       variant="outlined"
                       onMouseEnter={() => setHoveredShop(shop)}
@@ -705,7 +705,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
           </Grid>
 
           {/* RIGHT MAIN AREA: CATEGORY CHIPS & PRODUCT LIST */}
-          <Grid item xs={12} md={8} sx={{ order: { xs: 1, md: 2 } }}>
+          <Grid size={{ xs: 12, md: 8 }} sx={{ order: { xs: 1, md: 2 } }}>
             {/* Category Chips Bar */}
             <Box
               sx={{

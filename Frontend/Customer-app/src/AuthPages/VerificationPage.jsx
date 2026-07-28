@@ -88,6 +88,7 @@ export default function VerificationPage({ themeMode }) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: stateEmail,
           otp: fullOtp,

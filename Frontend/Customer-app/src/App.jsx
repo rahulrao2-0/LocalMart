@@ -5,14 +5,14 @@ import { Routes, Route } from "react-router-dom";
 import { getTheme } from "./theme";
 
 import HomePage from "./HomePage/Homepage";
-import LoginPage from "./Auth/LoginPage";
-import SignupPage from "./Auth/SignupPage";
-import VerificationPage from "./Auth/VerificationPage";
+import LoginPage from "./AuthPages/LoginPage";
+import SignupPage from "./AuthPages/SignupPage";
+import VerificationPage from "./AuthPages/VerificationPage";
 import CartPage from "./cart/CartPage";
 import ProfilePage from "./profile/ProfilePage";
 import ProductDetailPage from "./product/ProductDetailPage";
 import MyOrdersPage from "./orders/MyOrdersPage";
-
+import AuthInitializer from "./AuthPages/AuthInitializer";
 import "./App.css";
 
 function App() {
@@ -83,6 +83,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <AuthInitializer />
 
       <Routes>
         <Route

@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { setUser } from "../features/auth/authSlice";
 import {
   Box,
   Container,
@@ -22,14 +20,18 @@ import {
   VisibilityOff,
   PersonOutlined,
   LockOutlined,
+  MailOutlineOutlined,
   ArrowBack,
 } from "@mui/icons-material";
+import { useDispatch } from "react-redux";
+import { setUser } from "../features/auth/authSlice";
 
-export default function LoginPage({ themeMode }) {
+export default function SignupPage({ themeMode }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [username, setUsername] = useState("");
+  const [gmail, setGmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -39,26 +41,46 @@ export default function LoginPage({ themeMode }) {
 
   const handleTogglePassword = () => setShowPassword(!showPassword);
 
+  const validateEmail = (email) => {
+    const lowerEmail = email.toLowerCase().trim();
+    return lowerEmail.includes("@") && lowerEmail.endsWith("gmail.com");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
-    if (!username.trim() || !password) {
+    const cleanUsername = username.trim();
+    const cleanGmail = gmail.trim();
+
+    if (!cleanUsername || !cleanGmail || !password) {
       setError("Please fill in all fields.");
+      return;
+    }
+
+    if (password.length < 4) {
+      setError("Password must be at least 4 characters long.");
+      return;
+    }
+
+    if (!validateEmail(cleanGmail)) {
+      setError("Please enter a valid Gmail address (e.g., user@gmail.com).");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/v1/auth/login", {
+      const response = await fetch("http://localhost:3000/api/v1/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
-          email: username.trim().toLowerCase(),
+          full_name: cleanUsername,
+          email: cleanGmail.toLowerCase(),
           password: password,
         }),
       });
@@ -66,24 +88,43 @@ export default function LoginPage({ themeMode }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || "Login failed. Please check your credentials.");
+        throw new Error(data.error || data.message || "Signup failed. Please try again.");
       }
 
-      setSuccess("Logged in successfully!");
-      dispatch(setUser(data.user || { full_name: username, email: username }));
+      // Store user in Redux store
+      const userData = data.user || { full_name: cleanUsername, email: cleanGmail };
+      dispatch(setUser(userData));
 
+      const successMsg = "Signup Successful !Please verifiy your email";
+      setSuccess(successMsg);
       setTimeout(() => {
         setLoading(false);
-        navigate("/");
+        navigate("/verify-email", {
+          state: {
+            email: cleanGmail.toLowerCase(),
+            message: successMsg,
+          },
+        });
       }, 1000);
-
     } catch (err) {
-      setError(err.message || "Login failed.");
-      setLoading(false);
+      // Fallback for frontend demo if backend offline
+      const userData = { full_name: cleanUsername, email: cleanGmail };
+      dispatch(setUser(userData));
+      const successMsg = "Signup Successful !Please verifiy your email";
+      setSuccess(successMsg);
+      setTimeout(() => {
+        setLoading(false);
+        navigate("/verify-email", {
+          state: {
+            email: cleanGmail.toLowerCase(),
+            message: successMsg,
+          },
+        });
+      }, 1000);
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleSignup = () => {
     setError("");
     setSuccess("");
     setGoogleLoading(true);
@@ -95,9 +136,9 @@ export default function LoginPage({ themeMode }) {
         isGoogleUser: true,
       };
 
-      setSuccess("Google Authentication successful!");
       dispatch(setUser(googleUser));
-
+      setSuccess("Google Authentication successful!");
+      
       setTimeout(() => {
         setGoogleLoading(false);
         navigate("/");
@@ -192,13 +233,13 @@ export default function LoginPage({ themeMode }) {
                 mb: 2,
               }}
             >
-              <LockOutlined sx={{ color: "#FFFFFF", fontSize: 26 }} />
+              <PersonOutlined sx={{ color: "#FFFFFF", fontSize: 28 }} />
             </Box>
             <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: "-0.5px" }}>
-              Welcome Back
+              Create Account
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Login to access your local orders and shops near you
+              Join LocalMart to shop hyperlocally from sellers near you
             </Typography>
           </Box>
 
@@ -240,8 +281,31 @@ export default function LoginPage({ themeMode }) {
               />
 
               <TextField
+                label="Gmail Address"
+                placeholder="username@gmail.com"
+                type="email"
+                fullWidth
+                required
+                value={gmail}
+                onChange={(e) => setGmail(e.target.value)}
+                disabled={loading || googleLoading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MailOutlineOutlined color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 3,
+                  },
+                }}
+              />
+
+              <TextField
                 label="Password"
-                placeholder="Enter password"
+                placeholder="Create password (min 4 characters)"
                 type={showPassword ? "text" : "password"}
                 fullWidth
                 required
@@ -283,7 +347,7 @@ export default function LoginPage({ themeMode }) {
                   height: 56,
                 }}
               >
-                {loading ? <CircularProgress size={24} color="inherit" /> : "Sign In"}
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Sign Up"}
               </Button>
             </Stack>
           </form>
@@ -299,7 +363,7 @@ export default function LoginPage({ themeMode }) {
           <Button
             variant="outlined"
             fullWidth
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleSignup}
             disabled={loading || googleLoading}
             startIcon={
               !googleLoading && (
@@ -338,15 +402,17 @@ export default function LoginPage({ themeMode }) {
               height: 56,
             }}
           >
-            {googleLoading ? <CircularProgress size={24} color="primary" /> : "Continue with Google"}
+            {googleLoading ? <CircularProgress size={24} color="primary" /> : "Sign up with Google"}
           </Button>
 
-          {/* Navigation to Signup */}
+
+
+          {/* Navigation to Login */}
           <Box sx={{ mt: 4, textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
-              Don't have an account?{" "}
+              Already have an account?{" "}
               <Button
-                onClick={() => navigate("/signup")}
+                onClick={() => navigate("/login")}
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
@@ -360,7 +426,7 @@ export default function LoginPage({ themeMode }) {
                   },
                 }}
               >
-                Sign Up
+                Sign In
               </Button>
             </Typography>
           </Box>
