@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { login } from "../features/auth/authActions";
 import { setUser } from "../features/auth/authSlice";
 import {
   Box,
@@ -20,7 +21,7 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  PersonOutlined,
+  EmailOutlined,
   LockOutlined,
   ArrowBack,
 } from "@mui/icons-material";
@@ -29,7 +30,7 @@ export default function LoginPage({ themeMode }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +45,7 @@ export default function LoginPage({ themeMode }) {
     setError("");
     setSuccess("");
 
-    if (!username.trim() || !password) {
+    if (!email.trim() || !password) {
       setError("Please fill in all fields.");
       return;
     }
@@ -52,26 +53,12 @@ export default function LoginPage({ themeMode }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/v1/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: username.trim().toLowerCase(),
-          password: password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.message || "Login failed. Please check your credentials.");
-      }
+      await dispatch(login({
+        email: email.trim().toLowerCase(),
+        password: password,
+      }));
 
       setSuccess("Logged in successfully!");
-      dispatch(setUser(data.user || { full_name: username, email: username }));
 
       setTimeout(() => {
         setLoading(false);
@@ -219,17 +206,18 @@ export default function LoginPage({ themeMode }) {
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
               <TextField
-                label="Username"
-                placeholder="Enter your username"
+                label="Email Address"
+                placeholder="Enter your email"
+                type="email"
                 fullWidth
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading || googleLoading}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonOutlined color="action" />
+                      <EmailOutlined color="action" />
                     </InputAdornment>
                   ),
                 }}

@@ -16,6 +16,7 @@ import {
 import { MarkEmailReadOutlined, ArrowBack, Refresh } from "@mui/icons-material";
 import { useDispatch } from "react-redux";
 import { setUser } from "../features/auth/authSlice";
+import { resendOtpApi } from "../services/authApi";
 
 export default function VerificationPage({ themeMode }) {
   const theme = useTheme();
@@ -124,31 +125,13 @@ export default function VerificationPage({ themeMode }) {
     setResendLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/v1/auth/resend-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: stateEmail,
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok && !response.status) {
-        throw new Error(data.error || data.message || "Failed to resend OTP.");
-      }
-
-      setSuccess("A new 6-digit OTP has been sent to your email!");
+      const data = await resendOtpApi(stateEmail);
+      setSuccess(data.message || "A new 6-digit OTP has been sent to your email!");
       setTimer(60);
       setCanResend(false);
-      setResendLoading(false);
     } catch (err) {
-      // Fallback message display
-      setSuccess("A new verification code has been dispatched to " + stateEmail);
-      setTimer(60);
-      setCanResend(false);
+      setError(err.message || "Failed to resend OTP. Please try again.");
+    } finally {
       setResendLoading(false);
     }
   };

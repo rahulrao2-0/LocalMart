@@ -1,15 +1,18 @@
 const sendEmail = async ({ to, subject, html }) => {
   try {
+    const apiKey = (process.env.BREVO_API_KEY || "").trim();
+    const senderEmail = (process.env.BREVO_SENDER_EMAIL || "").trim();
+
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
+        "api-key": apiKey,
       },
       body: JSON.stringify({
         sender: {
           name: "LocalMart",
-          email: process.env.BREVO_SENDER_EMAIL, // must be verified in Brevo
+          email: senderEmail, // must be verified in Brevo
         },
         to: [{ email: to }],
         subject: subject,
