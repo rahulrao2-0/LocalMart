@@ -3,6 +3,7 @@
 const BASE_URL = "http://localhost:3000/api/v1";
 
 let isRefreshing = false;
+let refreshPromise = null;
 
 export const apiRequest = async (
   endpoint,
@@ -20,32 +21,30 @@ export const apiRequest = async (
 
   // Access token expired
   if (response.status === 401 && retry) {
-    // Prevent multiple refresh requests
     if (!isRefreshing) {
       isRefreshing = true;
 
-      const refreshResponse = await fetch(
-        `${BASE_URL}/auth/refresh`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-
-      isRefreshing = false;
-
-      if (refreshResponse.ok) {
-        // Retry original request
-        return apiRequest(endpoint, options, false);
-      }
-
-      // Refresh token also expired
-      window.location.href = "/login";
-      throw new Error("Session expired");
+      refreshPromise = fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      }).finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
     }
 
-    throw new Error("Refreshing token...");
+    const refreshResponse = await refreshPromise;
+
+    if (refreshResponse && refreshResponse.ok) {
+      // Retry original request with newly issued access token
+      return apiRequest(endpoint, options, false);
+    }
+
+    // Refresh token also expired or invalid
+    window.location.href = "/login";
+    throw new Error("Session expired. Please log in again.");
   }
+
 
   if (!response.ok) {
     const error = await response.json();

@@ -23,6 +23,16 @@ app.use(
   })
 );
 
+// Proxy for user API endpoints (/api/v1/users)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/users",
+    target: "http://localhost:3002",
+    changeOrigin: true,
+  })
+);
+
+
 
 
 

@@ -12,8 +12,10 @@ export const connectProducer = async () => {
 }
 
 export const publishEvent = async (topic, event) => {
-    try{
-        await producer.send({
+    console.log(`📤 [KAFKA PRODUCER] Attempting to publish event to topic "${topic}"...`);
+    console.log(`📦 [KAFKA PRODUCER] Event Payload:`, JSON.stringify(event, null, 2));
+    try {
+        const result = await producer.send({
             topic,
             messages: [
                 {
@@ -21,8 +23,9 @@ export const publishEvent = async (topic, event) => {
                 }
             ]
         });
-        console.log("✅ Event Published");
-    }catch(err){
-        console.error("❌ Failed to Publish Event", err);
+        console.log(`✅ [KAFKA PRODUCER] Event successfully published to topic "${topic}". Result:`, result);
+    } catch (err) {
+        console.error(`❌ [KAFKA PRODUCER] Failed to publish event to topic "${topic}". Error:`, err);
     }
-}
+}
+

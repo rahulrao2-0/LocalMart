@@ -1,7 +1,16 @@
-import React, { useState } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setUser } from "../features/auth/authSlice";
+import {
+  getProfileApi,
+  updateProfileApi,
+  uploadAvatarApi,
+  addAddressApi,
+  updateAddressApi,
+  deleteAddressApi,
+} from "../services/userApi.js";
+
 import {
   Box,
   Container,
@@ -12,16 +21,22 @@ import {
   Button,
   TextField,
   Stack,
-  Divider,
   Alert,
   IconButton,
   Chip,
   Tabs,
   Tab,
-  useTheme,
   Tooltip,
   Card,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
+
 import {
   PhotoCamera,
   Edit as EditIcon,
@@ -32,68 +47,195 @@ import {
   Email as EmailIcon,
   ArrowBack as ArrowBackIcon,
   CheckCircle as CheckCircleIcon,
-  ShoppingBagOutlined,
   VerifiedUserOutlined,
-  CancelOutlined,
   BadgeOutlined,
-  LocalShippingOutlined,
-  FavoriteBorderOutlined,
   SecurityOutlined,
-  NotificationsNoneOutlined,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  LocationOn as LocationIcon,
 } from "@mui/icons-material";
 
 export default function ProfilePage({ themeMode }) {
-  const theme = useTheme();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const user = useSelector((state) => state.auth.user) || {
-    full_name: "Rahul Sharma",
-    email: "rahul.sharma@gmail.com",
-    phone: "+91 98765 43210",
-    address: "Flat 302, Royal Palms, Vijay Nagar, Indore, MP - 452010",
-    avatar: "",
-  };
+  const authUser = useSelector((state) => state.auth.user);
 
   const [activeTab, setActiveTab] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    full_name: user.full_name || user.username || "Rahul Sharma",
-    email: user.email || user.gmail || "rahul.sharma@gmail.com",
-    phone: user.phone || "+91 98765 43210",
-    address: user.address || "Flat 302, Royal Palms, Vijay Nagar, Indore, MP - 452010",
-    bio: user.bio || "Avid shopper exploring local stores near Vijay Nagar",
-    avatar: user.avatar || "",
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const [profile, setProfile] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    bio: "",
+    profileImage: { url: "", publicId: "" },
+    addresses: [],
   });
 
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileData({ ...profileData, avatar: imageUrl });
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [addressForm, setAddressForm] = useState({
+    street: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "India",
+    isDefault: false,
+  });
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await getProfileApi();
+      if (res.success && res.profile) {
+        setProfile(res.profile);
+        dispatch(setUser({ ...authUser, ...res.profile }));
+      }
+    } catch (err) {
+      console.error("Error loading profile:", err);
+      setErrorMsg(err.message || "Failed to load profile details.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSave = (e) => {
-    if (e) e.preventDefault();
-    dispatch(setUser({ ...user, ...profileData }));
-    setIsEditing(false);
-    setSuccessMsg("Profile details saved successfully!");
-    setTimeout(() => setSuccessMsg(""), 3500);
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setAvatarUploading(true);
+      setErrorMsg("");
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await uploadAvatarApi(formData);
+      if (res.success) {
+        setProfile((prev) => ({ ...prev, profileImage: res.profileImage }));
+        setSuccessMsg("Profile avatar updated successfully!");
+        setTimeout(() => setSuccessMsg(""), 3500);
+      }
+    } catch (err) {
+      console.error("Avatar Upload Error:", err);
+      setErrorMsg(err.message || "Failed to upload image.");
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault();
+    try {
+      setActionLoading(true);
+      setErrorMsg("");
+      const res = await updateProfileApi({
+        fullName: profile.fullName,
+        phone: profile.phone,
+        bio: profile.bio,
+      });
+
+      if (res.success) {
+        setIsEditing(false);
+        setSuccessMsg("Profile details saved successfully!");
+        setTimeout(() => setSuccessMsg(""), 3500);
+      }
+    } catch (err) {
+      console.error("Update Profile Error:", err);
+      setErrorMsg(err.message || "Failed to update profile.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOpenAddressModal = (addr = null) => {
+    if (addr) {
+      setEditingAddressId(addr._id);
+      setAddressForm({
+        street: addr.street,
+        city: addr.city,
+        state: addr.state,
+        postalCode: addr.postalCode,
+        country: addr.country || "India",
+        isDefault: addr.isDefault || false,
+      });
+    } else {
+      setEditingAddressId(null);
+      setAddressForm({
+        street: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        country: "India",
+        isDefault: profile.addresses.length === 0,
+      });
+    }
+    setAddressModalOpen(true);
+  };
+
+  const handleSaveAddress = async () => {
+    try {
+      setActionLoading(true);
+      setErrorMsg("");
+      let res;
+      if (editingAddressId) {
+        res = await updateAddressApi(editingAddressId, addressForm);
+      } else {
+        res = await addAddressApi(addressForm);
+      }
+
+      if (res.success) {
+        setProfile((prev) => ({ ...prev, addresses: res.addresses }));
+        setAddressModalOpen(false);
+        setSuccessMsg(editingAddressId ? "Address updated!" : "New address added!");
+        setTimeout(() => setSuccessMsg(""), 3500);
+      }
+    } catch (err) {
+      console.error("Address Save Error:", err);
+      setErrorMsg(err.message || "Failed to save address.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      setActionLoading(true);
+      setErrorMsg("");
+      const res = await deleteAddressApi(addressId);
+      if (res.success) {
+        setProfile((prev) => ({ ...prev, addresses: res.addresses }));
+        setSuccessMsg("Address removed successfully!");
+        setTimeout(() => setSuccessMsg(""), 3500);
+      }
+    } catch (err) {
+      console.error("Delete Address Error:", err);
+      setErrorMsg(err.message || "Failed to delete address.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CircularProgress size={48} />
+      </Box>
+    );
+  }
+
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor: "background.default",
-        pb: 8,
-        position: "relative",
-      }}
-    >
-      {/* Hero Banner Header */}
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 8, position: "relative" }}>
       <Box
         sx={{
           height: { xs: 160, sm: 220, md: 260 },
@@ -119,23 +261,14 @@ export default function ProfilePage({ themeMode }) {
             fontWeight: 700,
             fontSize: { xs: "0.8rem", sm: "0.9rem" },
             border: "1px solid rgba(255, 255, 255, 0.3)",
-            "&:hover": {
-              bgcolor: "rgba(255, 255, 255, 0.35)",
-            },
+            "&:hover": { bgcolor: "rgba(255, 255, 255, 0.35)" },
           }}
         >
-          <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-            Back to Shopping
-          </Box>
-          <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>
-            Back
-          </Box>
+          Back to Shopping
         </Button>
       </Box>
 
-      {/* Main Profile Dashboard Container */}
       <Container maxWidth="lg" sx={{ mt: { xs: -8, sm: -10, md: -12 }, position: "relative", zIndex: 2 }}>
-        {/* Profile Identity Card */}
         <Paper
           elevation={0}
           sx={{
@@ -145,10 +278,7 @@ export default function ProfilePage({ themeMode }) {
             bgcolor: "background.paper",
             border: "1px solid",
             borderColor: "divider",
-            boxShadow: themeMode === "dark"
-              ? "0 20px 50px rgba(0,0,0,0.5)"
-              : "0 20px 50px rgba(108, 93, 211, 0.08)",
-            backdropFilter: "blur(20px)",
+            boxShadow: themeMode === "dark" ? "0 20px 50px rgba(0,0,0,0.5)" : "0 20px 50px rgba(108, 93, 211, 0.08)",
           }}
         >
           <Stack
@@ -157,7 +287,6 @@ export default function ProfilePage({ themeMode }) {
             justifyContent="space-between"
             spacing={3}
           >
-            {/* Avatar & Info */}
             <Stack
               direction={{ xs: "column", sm: "row" }}
               alignItems={{ xs: "center", sm: "flex-end" }}
@@ -166,7 +295,7 @@ export default function ProfilePage({ themeMode }) {
             >
               <Box sx={{ position: "relative", mt: { xs: -7, sm: -8 } }}>
                 <Avatar
-                  src={profileData.avatar}
+                  src={profile.profileImage?.url}
                   sx={{
                     width: { xs: 110, sm: 130 },
                     height: { xs: 110, sm: 130 },
@@ -178,8 +307,16 @@ export default function ProfilePage({ themeMode }) {
                     background: "linear-gradient(135deg, #6C5DD3 0%, #FF7551 100%)",
                   }}
                 >
-                  {profileData.full_name ? profileData.full_name[0].toUpperCase() : "U"}
+                  {profile.fullName ? profile.fullName[0].toUpperCase() : "U"}
                 </Avatar>
+
+                {avatarUploading && (
+                  <CircularProgress
+                    size={40}
+                    sx={{ position: "absolute", top: "35%", left: "35%", color: "#FFFFFF" }}
+                  />
+                )}
+
                 <input
                   accept="image/*"
                   style={{ display: "none" }}
@@ -188,16 +325,16 @@ export default function ProfilePage({ themeMode }) {
                   onChange={handleAvatarChange}
                 />
                 <label htmlFor="profile-avatar-input">
-                  <Tooltip title="Update Profile Picture">
+                  <Tooltip title="Upload Avatar to Cloudinary">
                     <IconButton
                       component="span"
+                      disabled={avatarUploading}
                       sx={{
                         position: "absolute",
                         bottom: 4,
                         right: 4,
                         bgcolor: "primary.main",
                         color: "#FFFFFF",
-                        boxShadow: "0 4px 14px rgba(108, 93, 211, 0.4)",
                         p: 0.9,
                         "&:hover": { bgcolor: "primary.dark" },
                       }}
@@ -209,17 +346,9 @@ export default function ProfilePage({ themeMode }) {
               </Box>
 
               <Box sx={{ pb: { sm: 1 } }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 1.5,
-                    justifyContent: { xs: "center", sm: "flex-start" },
-                  }}
-                >
-                  <Typography variant="h5" fontWeight={800} sx={{ fontSize: { xs: "1.35rem", sm: "1.65rem" } }}>
-                    {profileData.full_name}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, justifyContent: { xs: "center", sm: "flex-start" } }}>
+                  <Typography variant="h5" fontWeight={800}>
+                    {profile.fullName || "LocalMart User"}
                   </Typography>
                   <Chip
                     icon={<VerifiedUserOutlined sx={{ fontSize: "16px !important" }} />}
@@ -231,12 +360,11 @@ export default function ProfilePage({ themeMode }) {
                 </Box>
 
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {profileData.email} • Joined LocalMart
+                  {profile.email} • LocalMart Customer Profile
                 </Typography>
               </Box>
             </Stack>
 
-            {/* Action Buttons */}
             <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
               {!isEditing ? (
                 <Button
@@ -244,13 +372,7 @@ export default function ProfilePage({ themeMode }) {
                   variant="contained"
                   startIcon={<EditIcon />}
                   onClick={() => setIsEditing(true)}
-                  sx={{
-                    borderRadius: 3.5,
-                    px: 3,
-                    py: 1.2,
-                    fontWeight: 700,
-                    boxShadow: "0 8px 20px rgba(108, 93, 211, 0.3)",
-                  }}
+                  sx={{ borderRadius: 3.5, px: 3, py: 1.2, fontWeight: 700 }}
                 >
                   Edit Profile
                 </Button>
@@ -269,10 +391,11 @@ export default function ProfilePage({ themeMode }) {
                     fullWidth
                     variant="contained"
                     startIcon={<SaveIcon />}
-                    onClick={handleSave}
+                    onClick={handleSaveProfile}
+                    disabled={actionLoading}
                     sx={{ borderRadius: 3.5, px: 3, fontWeight: 700 }}
                   >
-                    Save
+                    {actionLoading ? "Saving..." : "Save"}
                   </Button>
                 </Stack>
               )}
@@ -286,105 +409,13 @@ export default function ProfilePage({ themeMode }) {
           </Alert>
         )}
 
-        {/* Dashboard Quick Stats Bar */}
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: 4,
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                textAlign: "center",
-              }}
-            >
-              <ShoppingBagOutlined color="primary" sx={{ fontSize: 28, mb: 0.5 }} />
-              <Typography variant="h6" fontWeight={800}>
-                14
-              </Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                Total Orders
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: 4,
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                textAlign: "center",
-              }}
-            >
-              <LocalShippingOutlined sx={{ color: "#FF7551", fontSize: 28, mb: 0.5 }} />
-              <Typography variant="h6" fontWeight={800}>
-                2
-              </Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                Active Deliveries
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: 4,
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                textAlign: "center",
-              }}
-            >
-              <FavoriteBorderOutlined sx={{ color: "#E91E63", fontSize: 28, mb: 0.5 }} />
-              <Typography variant="h6" fontWeight={800}>
-                8
-              </Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                Favorite Shops
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Card
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: 4,
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                textAlign: "center",
-              }}
-            >
-              <SecurityOutlined color="success" sx={{ fontSize: 28, mb: 0.5 }} />
-              <Typography variant="h6" fontWeight={800}>
-                Active
-              </Typography>
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                Account Status
-              </Typography>
-            </Card>
-          </Grid>
-        </Grid>
+        {errorMsg && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 3.5 }}>
+            {errorMsg}
+          </Alert>
+        )}
 
-        {/* Tabbed Content Section */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2.5, sm: 4 },
-            borderRadius: 5,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
-          }}
-        >
+        <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 5, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
           <Tabs
             value={activeTab}
             onChange={(e, val) => setActiveTab(val)}
@@ -394,35 +425,25 @@ export default function ProfilePage({ themeMode }) {
               mb: 3,
               borderBottom: "1px solid",
               borderColor: "divider",
-              "& .MuiTab-root": {
-                fontWeight: 700,
-                fontSize: "0.95rem",
-                textTransform: "none",
-                minHeight: 48,
-              },
+              "& .MuiTab-root": { fontWeight: 700, fontSize: "0.95rem", textTransform: "none", minHeight: 48 },
             }}
           >
             <Tab label="Personal Info" icon={<PersonIcon />} iconPosition="start" />
-            <Tab label="Delivery Address" icon={<HomeIcon />} iconPosition="start" />
-            <Tab label="Security & Privacy" icon={<SecurityOutlined />} iconPosition="start" />
+            <Tab label="Saved Addresses" icon={<HomeIcon />} iconPosition="start" />
+            <Tab label="Security & Account" icon={<SecurityOutlined />} iconPosition="start" />
           </Tabs>
 
-          {/* Tab 0: Personal Information */}
           {activeTab === 0 && (
-            <form onSubmit={handleSave}>
+            <form onSubmit={handleSaveProfile}>
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Full Name"
                     fullWidth
                     disabled={!isEditing}
-                    value={profileData.full_name}
-                    onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
-                    slotProps={{
-                      input: {
-                        startAdornment: <PersonIcon color="action" sx={{ mr: 1 }} />,
-                      },
-                    }}
+                    value={profile.fullName || ""}
+                    onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
+                    slotProps={{ input: { startAdornment: <PersonIcon color="action" sx={{ mr: 1 }} /> } }}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   />
                 </Grid>
@@ -432,12 +453,8 @@ export default function ProfilePage({ themeMode }) {
                     label="Email Address"
                     fullWidth
                     disabled
-                    value={profileData.email}
-                    slotProps={{
-                      input: {
-                        startAdornment: <EmailIcon color="action" sx={{ mr: 1 }} />,
-                      },
-                    }}
+                    value={profile.email || ""}
+                    slotProps={{ input: { startAdornment: <EmailIcon color="action" sx={{ mr: 1 }} /> } }}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   />
                 </Grid>
@@ -447,41 +464,35 @@ export default function ProfilePage({ themeMode }) {
                     label="Phone Number"
                     fullWidth
                     disabled={!isEditing}
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                    slotProps={{
-                      input: {
-                        startAdornment: <PhoneIcon color="action" sx={{ mr: 1 }} />,
-                      },
-                    }}
+                    value={profile.phone || ""}
+                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    placeholder="+91 9876543210"
+                    slotProps={{ input: { startAdornment: <PhoneIcon color="action" sx={{ mr: 1 }} /> } }}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
-                    label="Account Type"
+                    label="Account Role"
                     fullWidth
                     disabled
                     value="Verified Customer"
-                    slotProps={{
-                      input: {
-                        startAdornment: <BadgeOutlined color="action" sx={{ mr: 1 }} />,
-                      },
-                    }}
+                    slotProps={{ input: { startAdornment: <BadgeOutlined color="action" sx={{ mr: 1 }} /> } }}
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   />
                 </Grid>
 
                 <Grid size={{ xs: 12 }}>
                   <TextField
-                    label="Shopping Bio / Preferences"
+                    label="Shopping Bio / Notes"
                     fullWidth
                     multiline
                     rows={2}
                     disabled={!isEditing}
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                    value={profile.bio || ""}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    placeholder="Tell us your shopping preferences..."
                     sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
                   />
                 </Grid>
@@ -489,35 +500,92 @@ export default function ProfilePage({ themeMode }) {
             </form>
           )}
 
-          {/* Tab 1: Delivery Address */}
           {activeTab === 1 && (
             <Box>
-              <Typography variant="h6" fontWeight={800} gutterBottom>
-                Default Delivery Address
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                This address is automatically pre-selected when ordering from local shops near you.
-              </Typography>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+                <Typography variant="h6" fontWeight={800}>
+                  My Delivery Addresses
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenAddressModal(null)}
+                  sx={{ borderRadius: 3, fontWeight: 700 }}
+                >
+                  Add New Address
+                </Button>
+              </Stack>
 
-              <TextField
-                label="Full Address (Street, Flat, Area, Pincode)"
-                fullWidth
-                multiline
-                rows={3}
-                disabled={!isEditing}
-                value={profileData.address}
-                onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                slotProps={{
-                  input: {
-                    startAdornment: <HomeIcon color="action" sx={{ mr: 1, mt: 1 }} />,
-                  },
-                }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 3 } }}
-              />
+              {profile.addresses.length === 0 ? (
+                <Typography color="text.secondary" align="center" py={4}>
+                  No delivery addresses saved yet. Click "Add New Address" to create one.
+                </Typography>
+              ) : (
+                <Grid container spacing={2.5}>
+                  {profile.addresses.map((addr) => (
+                    <Grid size={{ xs: 12, sm: 6 }} key={addr._id}>
+                      <Card
+                        elevation={0}
+                        sx={{
+                          p: 2.5,
+                          borderRadius: 4,
+                          border: "1px solid",
+                          borderColor: addr.isDefault ? "primary.main" : "divider",
+                          position: "relative",
+                          bgcolor: addr.isDefault ? "rgba(108, 93, 211, 0.04)" : "background.paper",
+                        }}
+                      >
+                        {addr.isDefault && (
+                          <Chip
+                            label="Default Address"
+                            color="primary"
+                            size="small"
+                            sx={{ position: "absolute", top: 12, right: 12, fontWeight: 700 }}
+                          />
+                        )}
+
+                        <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                          <LocationIcon color="primary" sx={{ mt: 0.3 }} />
+                          <Box flex={1}>
+                            <Typography fontWeight={700}>{addr.street}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {addr.city}, {addr.state} - {addr.postalCode}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {addr.country}
+                            </Typography>
+
+                            <Stack direction="row" spacing={1} mt={2}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<EditIcon />}
+                                onClick={() => handleOpenAddressModal(addr)}
+                                sx={{ borderRadius: 2 }}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                startIcon={<DeleteIcon />}
+                                onClick={() => handleDeleteAddress(addr._id)}
+                                sx={{ borderRadius: 2 }}
+                              >
+                                Delete
+                              </Button>
+                            </Stack>
+                          </Box>
+                        </Stack>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
             </Box>
           )}
 
-          {/* Tab 2: Security & Privacy */}
           {activeTab === 2 && (
             <Stack spacing={3}>
               <Box>
@@ -529,10 +597,7 @@ export default function ProfilePage({ themeMode }) {
                 </Typography>
               </Box>
 
-              <Paper
-                elevation={0}
-                sx={{ p: 2.5, borderRadius: 3, border: "1px solid", borderColor: "divider" }}
-              >
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Box>
                     <Typography fontWeight={700}>Two-Factor Authentication</Typography>
@@ -543,27 +608,59 @@ export default function ProfilePage({ themeMode }) {
                   <Chip label="Enabled" color="success" size="small" sx={{ fontWeight: 700 }} />
                 </Stack>
               </Paper>
-
-              <Paper
-                elevation={0}
-                sx={{ p: 2.5, borderRadius: 3, border: "1px solid", borderColor: "divider" }}
-              >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography fontWeight={700}>Session Refresh Token</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Stored in secure HTTP-Only cookie with DB revocation check
-                    </Typography>
-                  </Box>
-                  <Chip label="Protected" color="primary" size="small" sx={{ fontWeight: 700 }} />
-                </Stack>
-              </Paper>
             </Stack>
           )}
         </Paper>
       </Container>
+
+      <Dialog open={addressModalOpen} onClose={() => setAddressModalOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight={800}>
+          {editingAddressId ? "Edit Address" : "Add New Address"}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} pt={1}>
+            <TextField
+              label="Street Address / Flat"
+              fullWidth
+              value={addressForm.street}
+              onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+            />
+            <TextField
+              label="City"
+              fullWidth
+              value={addressForm.city}
+              onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+            />
+            <TextField
+              label="State"
+              fullWidth
+              value={addressForm.state}
+              onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+            />
+            <TextField
+              label="Postal Code"
+              fullWidth
+              value={addressForm.postalCode}
+              onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={addressForm.isDefault}
+                  onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                />
+              }
+              label="Set as Default Address"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button onClick={() => setAddressModalOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveAddress} disabled={actionLoading}>
+            {actionLoading ? "Saving..." : "Save Address"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
-
-
