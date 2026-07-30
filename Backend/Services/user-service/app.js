@@ -1,0 +1,32 @@
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+
+import { connectDB } from "./config/db.js";
+import { configureCloudinary } from "./config/cloudinary.js";
+import userRoutes from "./routes/userRoutes.js";
+import { startUserConsumer } from "./services/userConsumer.js";
+
+const app = express();
+const port = process.env.PORT || 3002;
+
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+app.use("/api/v1/users", userRoutes);
+
+const startServer = async () => {
+  await connectDB();
+  configureCloudinary();
+  await startUserConsumer();
+
+  app.listen(port, () => {
+    console.log(`?? User Service running on port ${port}`);
+  });
+};
+
+startServer();

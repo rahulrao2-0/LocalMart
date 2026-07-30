@@ -70,12 +70,15 @@ app.get("/me", async (req, res) => {
   }
 });
 
+import { connectProducer } from "@localmart/shared";
+
 const startServer = async () => {
   await connectDB();
+  await connectProducer();
 
   app.listen(port, () => {
     console.log(`🚀 Auth Service running on port ${port}`);
   });
 };
 
-startServer();
+startServer();

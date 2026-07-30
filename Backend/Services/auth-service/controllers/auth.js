@@ -9,6 +9,8 @@ import {deleteOTP} from "../services/otp.service.js";
 import sendEmail from "../services/sendEmail.js";
 import { setAuthCookies, clearAuthCookies } from "../utils/cookie.js";
 import { createAccessToken, createRefreshToken, verifyAccessToken, verifyRefreshToken } from "../utils/jwt.js";
+import { publishEvent, TOPICS } from "@localmart/shared";
+
 
 
 export const signup = async (req, res) => {
@@ -485,6 +487,19 @@ export const verifyEmail = async (req, res) => {
 
       // 4. Clear the OTP from Redis so it cannot be reused
       await deleteOTP(email);
+
+      // 5. Publish USER_CREATED Kafka Event for User Service
+      try {
+        await publishEvent(TOPICS.USER_EVENTS, {
+          eventType: "USER_CREATED",
+          userId: userData.id,
+          email: userData.email,
+          fullName: userData.full_name,
+        });
+        console.log(`📡 Kafka USER_CREATED event published for ${email}`);
+      } catch (kafkaErr) {
+        console.error("❌ Kafka publishing error:", kafkaErr);
+      }
       
       return res.status(200).json({
         success: true,
