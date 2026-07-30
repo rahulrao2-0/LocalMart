@@ -4,3 +4,7 @@ node_modules/
 *.log
 dist/
 build/
+
+Backend/user-service/node_modules/
+Backend/user-service/.env
+

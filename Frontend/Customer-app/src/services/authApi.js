@@ -72,7 +72,12 @@ export const logoutUserApi = async () => {
 };
 
 export const getCurrentUser = async () => {
-  return fetchWithAuth("http://localhost:3000/api/v1/auth/me");
+  try {
+    return await fetchWithAuth("http://localhost:3000/api/v1/auth/me");
+  } catch (error) {
+    // Return null when unauthenticated on initial boot
+    return null;
+  }
 };
 
 // Automatic 401 handling wrapper (Interposes token refresh seamlessly)

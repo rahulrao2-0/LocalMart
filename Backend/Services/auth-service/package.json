@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@localmart/shared": "file:../../shared",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "crypto": "^1.0.1",

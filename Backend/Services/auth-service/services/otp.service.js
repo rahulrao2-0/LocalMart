@@ -1,4 +1,4 @@
-import { redis } from "../config/redis.js";
+import { redis } from "@localmart/shared";
 
 export const storeOTP = async (email, otp) => {
     await redis.set(`otp:${email}`, otp, {
