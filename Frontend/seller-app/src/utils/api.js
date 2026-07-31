@@ -1,0 +1,85 @@
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+export const getAccessToken = () => localStorage.getItem('seller_access_token');
+export const getRefreshToken = () => localStorage.getItem('seller_refresh_token');
+
+export const setTokens = (accessToken, refreshToken) => {
+  if (accessToken) localStorage.setItem('seller_access_token', accessToken);
+  if (refreshToken) localStorage.setItem('seller_refresh_token', refreshToken);
+};
+
+export const clearTokens = () => {
+  localStorage.removeItem('seller_access_token');
+  localStorage.removeItem('seller_refresh_token');
+  localStorage.removeItem('seller_user');
+};
+
+const refreshAccessToken = async () => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error('No refresh token available');
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) {
+    clearTokens();
+    window.location.href = '/login';
+    throw new Error('Failed to refresh token');
+  }
+
+  const data = await response.json();
+  setTokens(data.accessToken, data.refreshToken);
+  return data.accessToken;
+};
+
+export const apiFetch = async (endpoint, options = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  let token = getAccessToken();
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const fetchOptions = {
+    ...options,
+    headers,
+  };
+
+  let response = await fetch(url, fetchOptions);
+
+  if (response.status === 401 && token) {
+    try {
+      token = await refreshAccessToken();
+      headers['Authorization'] = `Bearer ${token}`;
+      fetchOptions.headers = headers;
+      response = await fetch(url, fetchOptions);
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return Promise.reject(error);
+    }
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch (e) {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const error = new Error(data?.message || response.statusText);
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+
+  return data;
+};

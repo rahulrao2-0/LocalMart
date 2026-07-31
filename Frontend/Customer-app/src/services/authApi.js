@@ -80,6 +80,9 @@ export const getCurrentUser = async () => {
   }
 };
 
+let isRefreshingAuth = false;
+let refreshAuthPromise = null;
+
 // Automatic 401 handling wrapper (Interposes token refresh seamlessly)
 export const fetchWithAuth = async (url, options = {}) => {
   const fetchOptions = {
@@ -95,8 +98,16 @@ export const fetchWithAuth = async (url, options = {}) => {
 
   // If 401 Unauthorized (Access token expired/invalid), attempt automatic refresh
   if (response.status === 401) {
+    if (!isRefreshingAuth) {
+      isRefreshingAuth = true;
+      refreshAuthPromise = refreshTokenApi().finally(() => {
+        isRefreshingAuth = false;
+        refreshAuthPromise = null;
+      });
+    }
+
     try {
-      const refreshData = await refreshTokenApi();
+      const refreshData = await refreshAuthPromise;
       if (refreshData && refreshData.success) {
         // Retry original request with newly issued access cookie
         response = await fetch(url, fetchOptions);

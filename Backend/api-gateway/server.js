@@ -5,7 +5,7 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:5174"],
     credentials: true
 }));
 
@@ -28,6 +28,15 @@ app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/users",
     target: "http://localhost:3002",
+    changeOrigin: true,
+  })
+);
+
+// Proxy for product API endpoints (/api/v1/products)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/products",
+    target: "http://localhost:3003",
     changeOrigin: true,
   })
 );
