@@ -50,7 +50,6 @@ import {
   Remove as RemoveIcon,
   Done as DoneIcon,
 } from "@mui/icons-material";
-import Navbar from "./Navbar";
 import SearchBar from "./SearchBar";
 import CategorySection from "./CategorySection";
 
@@ -207,19 +206,6 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
   // Cart State
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Seller registration form state
-  const [isShopRegOpen, setIsShopRegOpen] = useState(false);
-  const [regStep, setRegStep] = useState(1);
-  const [shopRegData, setShopRegData] = useState({
-    shopName: "",
-    ownerName: "",
-    category: "Grocery",
-    phone: "",
-    address: "",
-    deliveryRadius: 3,
-    supportsPickup: true,
-  });
-
   // Map interactive state
   const [hoveredShop, setHoveredShop] = useState(null);
   const [selectedShopOnMap, setSelectedShopOnMap] = useState(null);
@@ -359,46 +345,8 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
     }, 1500);
   };
 
-  // Seller registration form submission
-  const handleShopRegSubmit = (e) => {
-    e.preventDefault();
-    if (regStep < 3) {
-      setRegStep(regStep + 1);
-    }
-  };
-
-  const handleCloseShopReg = () => {
-    setIsShopRegOpen(false);
-    setRegStep(1);
-    setShopRegData({
-      shopName: "",
-      ownerName: "",
-      category: "Grocery",
-      phone: "",
-      address: "",
-      deliveryRadius: 3,
-      supportsPickup: true,
-    });
-  };
-
   return (
     <Box sx={{ bgcolor: "background.default", minHeight: "100vh", pb: 10 }}>
-      {/* NAVBAR */}
-      <Navbar
-        location={location}
-        mode={mode}
-        onModeChange={setMode}
-        cartCount={cartTotalQty}
-        onCartToggle={() => setIsCartOpen(true)}
-        themeMode={themeMode}
-        onToggleTheme={onToggleTheme}
-        onOpenShopReg={() => setIsShopRegOpen(true)}
-        onLocationChange={setLocation}
-        currentUser={currentUser}
-        onLogout={onLogout}
-        onNavigate={onNavigate}
-      />
-
       {/* HERO BANNER */}
       <Box
         sx={{
@@ -1071,132 +1019,6 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
             </DialogContent>
           </>
         )}
-      </Dialog>
-
-      {/* SHOP REGISTRATION MODAL */}
-      <Dialog
-        open={isShopRegOpen}
-        onClose={handleCloseShopReg}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 4, p: 1 },
-        }}
-      >
-        <DialogTitle sx={{ m: 0, p: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <StorefrontIcon color="primary" />
-            <Typography variant="h5" fontWeight={800}>
-              Register Shop on LocalMart
-            </Typography>
-          </Box>
-          <IconButton onClick={handleCloseShopReg}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <form onSubmit={handleShopRegSubmit}>
-          <DialogContent dividers sx={{ px: 3, py: 3 }}>
-            {/* Steps tracker */}
-            <Stack direction="row" spacing={1} justifyContent="center" sx={{ mb: 4 }}>
-              <Chip label="1. Basic Info" color={regStep >= 1 ? "primary" : "default"} sx={{ fontWeight: 700 }} />
-              <Chip label="2. Delivery & Address" color={regStep >= 2 ? "primary" : "default"} sx={{ fontWeight: 700 }} />
-              <Chip label="3. Complete" color={regStep >= 3 ? "primary" : "default"} sx={{ fontWeight: 700 }} />
-            </Stack>
-
-            {regStep === 1 && (
-              <Stack spacing={2.5}>
-                <TextField
-                  label="Shop Name"
-                  fullWidth
-                  required
-                  value={shopRegData.shopName}
-                  onChange={(e) => setShopRegData({ ...shopRegData, shopName: e.target.value })}
-                />
-                <TextField
-                  label="Owner Name"
-                  fullWidth
-                  required
-                  value={shopRegData.ownerName}
-                  onChange={(e) => setShopRegData({ ...shopRegData, ownerName: e.target.value })}
-                />
-                <TextField
-                  label="Primary Contact Number"
-                  fullWidth
-                  required
-                  type="tel"
-                  value={shopRegData.phone}
-                  onChange={(e) => setShopRegData({ ...shopRegData, phone: e.target.value })}
-                />
-              </Stack>
-            )}
-
-            {regStep === 2 && (
-              <Stack spacing={2.5}>
-                <TextField
-                  label="Shop Address"
-                  fullWidth
-                  required
-                  multiline
-                  rows={2}
-                  value={shopRegData.address}
-                  onChange={(e) => setShopRegData({ ...shopRegData, address: e.target.value })}
-                />
-                <TextField
-                  label="Delivery Radius Capacity (km)"
-                  fullWidth
-                  required
-                  type="number"
-                  value={shopRegData.deliveryRadius}
-                  onChange={(e) => setShopRegData({ ...shopRegData, deliveryRadius: Number(e.target.value) })}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={shopRegData.supportsPickup}
-                      onChange={(e) => setShopRegData({ ...shopRegData, supportsPickup: e.target.checked })}
-                    />
-                  }
-                  label="Supports In-store Pickup"
-                />
-              </Stack>
-            )}
-
-            {regStep === 3 && (
-              <Box sx={{ textAlign: "center", py: 3 }}>
-                <Avatar sx={{ bgcolor: "success.main", width: 64, height: 64, mx: "auto", mb: 2 }}>
-                  <DoneIcon sx={{ fontSize: 36, color: "#FFFFFF" }} />
-                </Avatar>
-                <Typography variant="h6" fontWeight={800} gutterBottom>
-                  Application Submitted Successfully!
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Our team will verify your local shop details and contact you at{" "}
-                  <strong>{shopRegData.phone}</strong> within 24 hours to go live!
-                </Typography>
-              </Box>
-            )}
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2.5 }}>
-            {regStep < 3 ? (
-              <>
-                {regStep > 1 && (
-                  <Button variant="outlined" onClick={() => setRegStep(regStep - 1)}>
-                    Back
-                  </Button>
-                )}
-                <Button type="submit" variant="contained">
-                  Next Step
-                </Button>
-              </>
-            ) : (
-              <Button variant="contained" onClick={handleCloseShopReg} fullWidth>
-                Close Portal
-              </Button>
-            )}
-          </DialogActions>
-        </form>
       </Dialog>
 
       {/* CHECKOUT SUCCESS MODAL */}

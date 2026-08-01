@@ -13,6 +13,8 @@ import ProfilePage from "./profile/ProfilePage";
 import ProductDetailPage from "./product/ProductDetailPage";
 import MyOrdersPage from "./orders/MyOrdersPage";
 import AuthInitializer from "./AuthPages/AuthInitializer";
+import SellerSignupPage from "./AuthPages/SellerSignupPage";
+import Navbar from "./HomePage/Navbar";
 import "./App.css";
 
 function App() {
@@ -84,6 +86,11 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthInitializer />
+      <Navbar 
+        cartCount={cart.length} 
+        themeMode={themeMode} 
+        onToggleTheme={toggleTheme} 
+      />
 
       <Routes>
         <Route
@@ -111,6 +118,15 @@ function App() {
           path="/signup"
           element={
             <SignupPage
+              themeMode={themeMode}
+            />
+          }
+        />
+
+        <Route
+          path="/seller-signup"
+          element={
+            <SellerSignupPage
               themeMode={themeMode}
             />
           }

@@ -56,7 +56,6 @@ export default function Navbar({
   onCartToggle,
   themeMode = "light",
   onToggleTheme,
-  onOpenShopReg,
   onLocationChange,
   onLogout,
   onNavigate,
@@ -74,6 +73,7 @@ export default function Navbar({
 
   // Get logged-in user from Redux store
   const user = useSelector((state) => state.auth.user);
+  const isSeller = user?.role === 'seller' || user?.isSeller === true;
 
   const handleModeChange = (event, newMode) => {
     if (newMode !== null && onModeChange) onModeChange(newMode);
@@ -220,21 +220,23 @@ export default function Navbar({
           {/* ACTIONS */}
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, md: 1 } }}>
             {/* SELL BUTTON */}
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              startIcon={<StoreIcon />}
-              onClick={onOpenShopReg}
-              sx={{
-                display: { xs: "none", lg: "inline-flex" },
-                borderRadius: "10px",
-                fontWeight: 700,
-                borderWidth: "1.5px",
-              }}
-            >
-              Sell
-            </Button>
+            {!isSeller && (
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<StoreIcon />}
+                onClick={() => { window.open('http://localhost:5174/signup', '_blank'); }}
+                sx={{
+                  display: { xs: "none", sm: "inline-flex" },
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  borderWidth: "1.5px",
+                }}
+              >
+                Sell
+              </Button>
+            )}
 
             {/* THEME TOGGLE */}
             <Tooltip title={themeMode === "dark" ? "Light Mode" : "Dark Mode"}>
@@ -336,6 +338,15 @@ export default function Navbar({
                     </ListItemIcon>
                     <Typography variant="body2" fontWeight={600}>Help & Support</Typography>
                   </MenuItem>
+
+                  {isSeller && (
+                    <MenuItem onClick={() => { handleUserMenuClose(); window.open('http://localhost:5174', '_blank'); }}>
+                      <ListItemIcon>
+                        <StoreIcon fontSize="small" color="primary" />
+                      </ListItemIcon>
+                      <Typography variant="body2" fontWeight={600}>Seller Dashboard</Typography>
+                    </MenuItem>
+                  )}
 
                   <Divider sx={{ my: 0.5 }} />
 
