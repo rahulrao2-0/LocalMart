@@ -3,7 +3,7 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Chip, TextField, InputAdornment, MenuItem, Select, FormControl, InputLabel, TablePagination
 } from '@mui/material';
-import { Search, FilterList } from '@mui/icons-material';
+import { Search } from '@mui/icons-material';
 
 const mockHistory = [
   { id: 'DEL-1090', date: '2023-10-15', customer: 'John Doe', status: 'Delivered', amount: 15.50 },
@@ -38,7 +38,7 @@ const History = () => {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" mb={3}>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
         Delivery History
       </Typography>
 
@@ -50,12 +50,14 @@ const History = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           size="small"
           sx={{ flexGrow: 1, minWidth: '250px' }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }
           }}
         />
         <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -89,7 +91,7 @@ const History = () => {
                 <TableCell>{row.id}</TableCell>
                 <TableCell>{row.date}</TableCell>
                 <TableCell>{row.customer}</TableCell>
-                <TableCell fontWeight="bold">${row.amount.toFixed(2)}</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>${row.amount.toFixed(2)}</TableCell>
                 <TableCell>
                   <Chip 
                     label={row.status} 

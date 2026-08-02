@@ -65,7 +65,7 @@ const Earnings = () => {
                   primary={<Typography fontWeight="bold">{payout.id}</Typography>} 
                   secondary={payout.date} 
                 />
-                <Box textAlign="right">
+                <Box sx={{ textAlign: 'right' }}>
                   <Typography variant="h6" fontWeight="bold" color="success.main">
                     +${payout.amount.toFixed(2)}
                   </Typography>

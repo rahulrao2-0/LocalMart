@@ -62,7 +62,7 @@ const MainLayout = () => {
     <div>
       <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2 }}>
         <LocalShipping sx={{ color: theme.palette.primary.main, mr: 1, fontSize: 32 }} />
-        <Typography variant="h6" color="primary" fontWeight="bold">
+        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
           LocalMart
         </Typography>
       </Toolbar>
@@ -84,7 +84,10 @@ const MainLayout = () => {
               <ListItemIcon sx={{ minWidth: 40, color: 'text.secondary' }}>
                 {item.icon}
               </ListItemIcon>
-              <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: 500 }} />
+              <ListItemText 
+                primary={item.text} 
+                sx={{ '& .MuiTypography-root': { fontWeight: 500 } }} 
+              />
             </ListItemButton>
           </ListItem>
         ))}

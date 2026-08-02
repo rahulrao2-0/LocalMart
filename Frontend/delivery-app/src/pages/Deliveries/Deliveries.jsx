@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Box, Typography, Card, CardContent, Chip, Button, Grid, Avatar, 
+  Box, Typography, Card, CardContent, Chip, Button, Avatar, 
   Tabs, Tab, IconButton, Divider 
 } from '@mui/material';
 import { 
@@ -28,12 +28,12 @@ const DeliveryCard = ({ delivery }) => {
   return (
     <Card sx={{ mb: 2, borderRadius: 3, boxShadow: 2, transition: '0.3s', '&:hover': { boxShadow: 4 } }}>
       <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Box display="flex" alignItems="center" gap={1}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main' }}>
               <LocalShipping />
             </Avatar>
-            <Typography variant="h6" fontWeight="bold">
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
               {delivery.id}
             </Typography>
           </Box>
@@ -42,22 +42,22 @@ const DeliveryCard = ({ delivery }) => {
         
         <Divider sx={{ mb: 2 }} />
         
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={8}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, justifyContent: 'space-between' }}>
+          <Box sx={{ flexGrow: 1 }}>
             <Typography variant="subtitle2" color="text.secondary">Customer</Typography>
-            <Typography variant="body1" fontWeight="500">{delivery.customer}</Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>{delivery.customer}</Typography>
             
             <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Delivery Address</Typography>
             <Typography variant="body2">{delivery.address}</Typography>
             
             <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>Distance</Typography>
             <Typography variant="body2">{delivery.distance}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={4} display="flex" flexDirection="column" alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'flex-start', sm: 'flex-end' } }}>
             <Typography variant="subtitle2" color="text.secondary">Earning</Typography>
-            <Typography variant="h5" color="primary.main" fontWeight="bold">${delivery.amount.toFixed(2)}</Typography>
+            <Typography variant="h5" color="primary.main" sx={{ fontWeight: 'bold' }}>${delivery.amount.toFixed(2)}</Typography>
             
-            <Box display="flex" gap={1} mt={2}>
+            <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
               <IconButton color="primary" size="small" sx={{ bgcolor: 'primary.50' }}>
                 <Phone fontSize="small" />
               </IconButton>
@@ -65,10 +65,10 @@ const DeliveryCard = ({ delivery }) => {
                 <Directions fontSize="small" />
               </IconButton>
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
         
-        <Box mt={3} display="flex" gap={2}>
+        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
           {delivery.status === 'Assigned' && (
             <>
               <Button variant="contained" color="primary" fullWidth startIcon={<CheckCircle />}>Accept</Button>
@@ -100,7 +100,7 @@ const Deliveries = () => {
 
   return (
     <Box>
-      <Typography variant="h4" fontWeight="bold" mb={3}>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>
         Active Deliveries
       </Typography>
       
