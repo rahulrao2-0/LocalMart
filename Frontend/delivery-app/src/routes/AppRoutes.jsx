@@ -14,12 +14,12 @@ import VerifyOtp from '../pages/Auth/VerifyOtp';
 
 // Placeholder for other pages to be implemented
 import Dashboard from '../pages/Dashboard/Dashboard';
-const Deliveries = () => <div>Deliveries Module Coming Soon</div>;
-const History = () => <div>History Module Coming Soon</div>;
-const Earnings = () => <div>Earnings Module Coming Soon</div>;
-const Profile = () => <div>Profile Module Coming Soon</div>;
-const Notifications = () => <div>Notifications Module Coming Soon</div>;
-const Settings = () => <div>Settings Module Coming Soon</div>;
+import Deliveries from '../pages/Deliveries/Deliveries';
+import History from '../pages/History/History';
+import Earnings from '../pages/Earnings/Earnings';
+import Profile from '../pages/Profile/Profile';
+import Notifications from '../pages/Notifications/Notifications';
+import Settings from '../pages/Settings/Settings';
 const NotFound = () => <div>404 Not Found</div>;
 
 // Protected Route Component

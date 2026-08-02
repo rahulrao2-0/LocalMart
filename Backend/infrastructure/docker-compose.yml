@@ -45,4 +45,4 @@ services:
 
 volumes:
   redis-data:
-  kafka-data: Wait for two minutes. I will be there soon six
+  kafka-data: 
