@@ -8,6 +8,7 @@ import cors from "cors";
 import { connectDB } from "./config/db.js";
 import { configureCloudinary } from "./config/cloudinary.js";
 import userRoutes from "./routes/userRoutes.js";
+import sellerRoutes from "./routes/sellerRoutes.js";
 import { startUserConsumer } from "./services/userConsumer.js";
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/sellers", sellerRoutes);
 
 const startServer = async () => {
   await connectDB();

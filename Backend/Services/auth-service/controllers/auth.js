@@ -19,13 +19,20 @@ export const signup = async (req, res) => {
 console.log("Signup api hit");
 
   try {
-    const { full_name, email, password } = req.body;
+    const { full_name, email, password, role = "CUSTOMER" } = req.body;
 
     // Validation
     if (!full_name || !email || !password) {
       return res.status(400).json({
         success: false,
         message: "Full name, email and password are required.",
+      });
+    }
+
+    if (!["CUSTOMER", "SELLER"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role specified.",
       });
     }
 
@@ -46,10 +53,10 @@ console.log("Signup api hit");
       });
     }
 
-    // Get CUSTOMER role id
+    // Get Role id
     const [roles] = await connection.execute(
       "SELECT id FROM roles WHERE name = ?",
-      ["CUSTOMER"]
+      [role]
     );
 
     if (roles.length === 0) {
@@ -57,11 +64,11 @@ console.log("Signup api hit");
 
       return res.status(500).json({
         success: false,
-        message: "Customer role not found.",
+        message: `${role} role not found in database.`,
       });
     }
 
-    const customerRoleId = roles[0].id;
+    const assignedRoleId = roles[0].id;
 
     // Hash Password
     const passwordHash = await bcrypt.hash(password, 10);
@@ -77,12 +84,12 @@ console.log("Signup api hit");
       [userId, full_name, email, passwordHash]
     );
 
-    // Assign CUSTOMER Role
+    // Assign Role
     await connection.execute(
       `INSERT INTO user_roles
       (user_id, role_id)
       VALUES (?, ?)`,
-      [userId, customerRoleId]
+      [userId, assignedRoleId]
     );
 
     await connection.commit();
@@ -131,7 +138,7 @@ console.log("Signup api hit");
     const payload = {
       userId: userId,
       email: email,
-      roles: ["CUSTOMER"],
+      roles: [role],
     };
 
     const accessToken = createAccessToken(payload);
@@ -156,7 +163,7 @@ console.log("Signup api hit");
         id: userId,
         full_name,
         email,
-        roles: ["CUSTOMER"],
+        roles: [role],
       },
     });
 

@@ -1,19 +1,17 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { apiFetch, setTokens, clearTokens } from '../../utils/api';
+import { login as loginApi, register as registerApi, logout as logoutApi } from '../../services/authApi';
+import { apiFetch } from '../../services/api';
 
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const data = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      });
-      setTokens(data.accessToken, data.refreshToken);
+      const data = await loginApi(credentials);
+      // The backend sets the token cookies automatically. We just cache the user object.
       localStorage.setItem('seller_user', JSON.stringify(data.user));
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -22,11 +20,11 @@ export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      await apiFetch('/auth/logout', { method: 'POST' });
+      await logoutApi(); // Backend clears cookies
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      clearTokens();
+      localStorage.removeItem('seller_user');
     }
   }
 );
@@ -35,22 +33,52 @@ export const register = createAsyncThunk(
   'auth/register',
   async (credentials, { rejectWithValue }) => {
     try {
-      const data = await apiFetch('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      });
-      setTokens(data.accessToken, data.refreshToken);
-      localStorage.setItem('seller_user', JSON.stringify(data.user));
-      return data;
+      // 1. Register with Auth Service (expects full_name instead of ownerName)
+      const authPayload = {
+        ...credentials,
+        full_name: credentials.ownerName,
+        role: 'SELLER'
+      };
+      
+      const authResponse = await registerApi(authPayload);
+      
+      // Backend automatically sets the cookie tokens here.
+      
+      // 2. Now that cookies are set, create Seller Profile in User Service
+      try {
+        await apiFetch('/sellers/profile', {
+          method: 'POST',
+          body: JSON.stringify({
+            businessName: credentials.businessName,
+            ownerName: credentials.ownerName,
+            phone: credentials.phone,
+            businessType: credentials.businessType,
+            gstNumber: credentials.gstNumber,
+            panNumber: credentials.panNumber,
+            addressType: credentials.addressType,
+            addressLine1: credentials.addressLine1,
+            addressLine2: credentials.addressLine2,
+            city: credentials.city,
+            state: credentials.state,
+            postalCode: credentials.postalCode
+          })
+        });
+      } catch (profileError) {
+        console.error("Failed to create seller profile:", profileError);
+        // We don't reject here because auth succeeded, but we log the error.
+      }
+
+      localStorage.setItem('seller_user', JSON.stringify(authResponse.user));
+      return authResponse;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
 
 const initialState = {
   user: JSON.parse(localStorage.getItem('seller_user')) || null,
-  isAuthenticated: !!localStorage.getItem('seller_access_token'),
+  isAuthenticated: !!localStorage.getItem('seller_user'), // Base this on user object presence since tokens are HttpOnly
   loading: false,
   error: null,
 };

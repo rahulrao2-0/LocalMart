@@ -41,6 +41,15 @@ app.use(
   })
 );
 
+// Proxy for seller API endpoints (/api/v1/sellers)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/sellers",
+    target: "http://localhost:3002",
+    changeOrigin: true,
+  })
+);
+
 
 
 

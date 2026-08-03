@@ -3,13 +3,12 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 const PrivateRoute = ({ children }) => {
-  // const { isAuthenticated } = useSelector((state) => state.auth);
-  // const location = useLocation();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const location = useLocation();
 
-  // Temporary bypass for development/testing without DB seller accounts
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" state={{ from: location }} replace />;
-  // }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   return children;
 };

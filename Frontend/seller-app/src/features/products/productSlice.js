@@ -1,14 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { apiFetch } from '../../utils/api';
+import { 
+  fetchSellerProducts as fetchSellerProductsApi,
+  createProduct as createProductApi,
+  updateProduct as updateProductApi,
+  deleteProduct as deleteProductApi
+} from '../../services/productApi';
 
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
-  async (_, { rejectWithValue }) => {
+  async (sellerId, { rejectWithValue }) => {
     try {
-      const data = await apiFetch('/products/seller');
-      return data;
+      const response = await fetchSellerProductsApi(sellerId);
+      // The API returns { success: true, data: [...] }
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -17,13 +23,10 @@ export const createProduct = createAsyncThunk(
   'products/createProduct',
   async (productData, { rejectWithValue }) => {
     try {
-      const data = await apiFetch('/products', {
-        method: 'POST',
-        body: JSON.stringify(productData),
-      });
-      return data;
+      const response = await createProductApi(productData);
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -32,13 +35,10 @@ export const updateProduct = createAsyncThunk(
   'products/updateProduct',
   async ({ id, productData }, { rejectWithValue }) => {
     try {
-      const data = await apiFetch(`/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(productData),
-      });
-      return data;
+      const response = await updateProductApi(id, productData);
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -47,12 +47,10 @@ export const deleteProduct = createAsyncThunk(
   'products/deleteProduct',
   async (id, { rejectWithValue }) => {
     try {
-      await apiFetch(`/products/${id}`, {
-        method: 'DELETE',
-      });
+      await deleteProductApi(id);
       return id;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data?.message || error.message);
     }
   }
 );
@@ -82,7 +80,7 @@ const productSlice = createSlice({
       })
       // Create Product
       .addCase(createProduct.fulfilled, (state, action) => {
-        state.items.push(action.payload);
+        state.items.unshift(action.payload);
       })
       // Update Product
       .addCase(updateProduct.fulfilled, (state, action) => {

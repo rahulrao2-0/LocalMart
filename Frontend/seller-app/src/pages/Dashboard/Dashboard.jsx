@@ -1,83 +1,115 @@
 import React from 'react';
-import { Grid, Typography, Box, Card, CardContent, Avatar, Paper, Chip, IconButton, Button } from '@mui/material';
+import { 
+  Grid, Typography, Box, Card, CardContent, Avatar, 
+  Paper, Chip, IconButton, Button, useTheme, alpha 
+} from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import AddIcon from '@mui/icons-material/Add';
 
-const StatCard = ({ title, value, icon, color, trend }) => (
-  <Card 
-    sx={{ 
-      height: '100%', 
-      position: 'relative', 
-      overflow: 'hidden',
-      borderRadius: 4,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-      border: '1px solid',
-      borderColor: 'grey.100',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 12px 28px rgba(0,0,0,0.08)',
-      }
-    }}
-  >
-    <Box sx={{
-      position: 'absolute',
-      right: -20,
-      top: -20,
-      width: 120,
-      height: 120,
-      borderRadius: '50%',
-      backgroundColor: `${color}15`,
-      zIndex: 0,
-      transition: 'transform 0.3s ease',
-      '.MuiCard-root:hover &': {
-        transform: 'scale(1.2)'
-      }
-    }} />
-    <CardContent sx={{ position: 'relative', zIndex: 1, p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-        <Avatar sx={{ bgcolor: `${color}20`, color: color, width: 48, height: 48, borderRadius: 3 }}>
-          {icon}
-        </Avatar>
-        <Box 
-          sx={{ 
-            bgcolor: trend.startsWith('+') ? 'success.50' : 'error.50',
-            color: trend.startsWith('+') ? 'success.main' : 'error.main',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 2,
-            fontSize: '0.75rem',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5
-          }}
-        >
-          {trend.startsWith('+') ? '↑' : '↓'} {trend.replace(/[+-]/, '')}
+const StatCard = ({ title, value, icon, gradient, trend, trendValue }) => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  
+  return (
+    <Card 
+      sx={{ 
+        height: '100%', 
+        position: 'relative', 
+        overflow: 'hidden',
+        borderRadius: 4,
+        background: isDark 
+          ? `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 100%)`
+          : `linear-gradient(135deg, ${alpha('#ffffff', 0.9)} 0%, ${alpha('#f8f9fa', 0.6)} 100%)`,
+        backdropFilter: 'blur(20px)',
+        border: '1px solid',
+        borderColor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha(theme.palette.common.white, 0.8),
+        boxShadow: isDark 
+          ? '0 8px 32px rgba(0,0,0,0.3)'
+          : '0 8px 32px rgba(31,38,135,0.07)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-5px)',
+          boxShadow: isDark 
+            ? '0 12px 40px rgba(0,0,0,0.4)'
+            : '0 12px 40px rgba(31,38,135,0.12)',
+        }
+      }}
+    >
+      <Box sx={{
+        position: 'absolute',
+        right: -30,
+        top: -30,
+        width: 150,
+        height: 150,
+        borderRadius: '50%',
+        background: gradient,
+        opacity: 0.15,
+        zIndex: 0,
+        transition: 'transform 0.3s ease',
+        '.MuiCard-root:hover &': {
+          transform: 'scale(1.2)'
+        }
+      }} />
+      <CardContent sx={{ position: 'relative', zIndex: 1, p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 1 }}>
+              {title}
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: -0.5 }}>
+              {value}
+            </Typography>
+          </Box>
+          <Avatar sx={{ 
+            background: gradient, 
+            color: 'white', 
+            width: 56, 
+            height: 56, 
+            borderRadius: 3,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            {icon}
+          </Avatar>
         </Box>
-      </Box>
-      <Box>
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5 }}>
-          {title}
-        </Typography>
-        <Typography variant="h3" sx={{ fontWeight: 900, color: 'text.primary', letterSpacing: -1 }}>
-          {value}
-        </Typography>
-      </Box>
-    </CardContent>
-  </Card>
-);
+        <Box sx={{ mt: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box 
+            sx={{ 
+              display: 'flex',
+              alignItems: 'center',
+              bgcolor: trend === 'up' ? alpha(theme.palette.success.main, 0.1) : alpha(theme.palette.error.main, 0.1),
+              color: trend === 'up' ? theme.palette.success.main : theme.palette.error.main,
+              px: 1,
+              py: 0.5,
+              borderRadius: 2,
+            }}
+          >
+            {trend === 'up' ? <TrendingUpIcon fontSize="small" sx={{ mr: 0.5 }}/> : <TrendingDownIcon fontSize="small" sx={{ mr: 0.5 }}/>}
+            <Typography variant="caption" sx={{ fontWeight: 700 }}>
+              {trendValue}
+            </Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            vs last month
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
 
 const recentOrders = [
   { id: '#ORD-7829', customer: 'Alice Cooper', amount: 120.50, status: 'Processing', date: 'Just now' },
   { id: '#ORD-7828', customer: 'Marcus Levin', amount: 84.00, status: 'Shipped', date: '2 hours ago' },
   { id: '#ORD-7827', customer: 'Sarah Jenkins', amount: 210.25, status: 'Delivered', date: '5 hours ago' },
   { id: '#ORD-7826', customer: 'David Smith', amount: 45.90, status: 'Processing', date: '1 day ago' },
+  { id: '#ORD-7825', customer: 'Emma Watson', amount: 330.00, status: 'Delivered', date: '2 days ago' },
 ];
 
 const getStatusColor = (status) => {
@@ -90,122 +122,154 @@ const getStatusColor = (status) => {
 };
 
 const Dashboard = () => {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', month: 'long', day: 'numeric' 
   });
 
+  const glassStyle = {
+    background: isDark 
+      ? `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.8)} 0%, ${alpha(theme.palette.background.paper, 0.4)} 100%)`
+      : `linear-gradient(135deg, ${alpha('#ffffff', 0.9)} 0%, ${alpha('#f8f9fa', 0.6)} 100%)`,
+    backdropFilter: 'blur(20px)',
+    border: '1px solid',
+    borderColor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha(theme.palette.common.white, 0.8),
+    boxShadow: isDark 
+      ? '0 8px 32px rgba(0,0,0,0.3)'
+      : '0 8px 32px rgba(31,38,135,0.07)',
+    borderRadius: 4,
+  };
+
   return (
-    <Box sx={{ maxWidth: '1400px', mx: 'auto' }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, mb: 4, gap: 2 }}>
+    <Box sx={{ maxWidth: '1400px', mx: 'auto', p: { xs: 2, md: 3 } }}>
+      
+      {/* Hero Section */}
+      <Box sx={{ 
+        ...glassStyle,
+        p: { xs: 3, md: 5 }, 
+        mb: 4, 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' }, 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', md: 'center' },
+        gap: 3,
+        background: isDark 
+          ? `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.6)} 0%, ${alpha(theme.palette.background.paper, 0.8)} 100%)`
+          : `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.2)} 0%, ${alpha('#ffffff', 0.9)} 100%)`,
+      }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.5 }}>
-            Store Overview
+          <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: 'text.primary' }}>
+            Welcome back, Seller! 👋
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
             {currentDate} • Here's what's happening with your store today.
           </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Button variant="contained" color="primary" startIcon={<AddIcon />} sx={{ borderRadius: 2, px: 3, py: 1, fontWeight: 'bold' }}>
+              Add Product
+            </Button>
+            <Button variant="outlined" color="primary" sx={{ borderRadius: 2, px: 3, py: 1, fontWeight: 'bold' }}>
+              View Reports
+            </Button>
+          </Box>
         </Box>
-        <Button variant="contained" color="primary" startIcon={<ShoppingBagIcon />} sx={{ borderRadius: 2, px: 3, py: 1.5, fontWeight: 'bold' }}>
-          Add New Product
-        </Button>
+        <Box sx={{ 
+          display: { xs: 'none', md: 'block' },
+          p: 2,
+          borderRadius: '50%',
+          bgcolor: alpha(theme.palette.primary.main, 0.1)
+        }}>
+          <ShoppingBagIcon sx={{ fontSize: 80, color: theme.palette.primary.main }} />
+        </Box>
       </Box>
 
+      {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Total Sales" 
-            value="$12,450" 
+            title="Total Revenue" 
+            value="$24,500" 
             icon={<AccountBalanceWalletIcon />} 
-            color="#10B981" 
-            trend="+14.5%"
+            gradient="linear-gradient(135deg, #10B981 0%, #059669 100%)" 
+            trend="up"
+            trendValue="12.5%"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Active Orders" 
+            title="Pending Orders" 
             value="45" 
             icon={<LocalShippingIcon />} 
-            color="#2B3467" 
-            trend="+5.2%"
+            gradient="linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" 
+            trend="up"
+            trendValue="5.2%"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Total Products" 
+            title="Active Products" 
             value="128" 
             icon={<Inventory2Icon />} 
-            color="#EB455F" 
-            trend="+12.0%"
+            gradient="linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)" 
+            trend="up"
+            trendValue="8.0%"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Low Stock" 
             value="3" 
             icon={<WarningAmberIcon />} 
-            color="#F59E0B" 
-            trend="-2.1%"
+            gradient="linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" 
+            trend="down"
+            trendValue="2.1%"
           />
         </Grid>
       </Grid>
       
       <Grid container spacing={3}>
-        {/* Sales Analytics Overview (MUI Native) */}
-        <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-          <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', height: '100%', border: '1px solid', borderColor: 'grey.100', display: 'flex', flexDirection: 'column' }}>
+        {/* Modern Chart Area Placeholder */}
+        <Grid item xs={12} lg={8}>
+          <Paper sx={{ ...glassStyle, p: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Sales Performance</Typography>
-              <Typography variant="subtitle2" color="primary" sx={{ cursor: 'pointer', fontWeight: 'bold' }}>
-                View Full Report
-              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>Revenue Overview</Typography>
+              <Chip label="This Week" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
             </Box>
             
-            <Box sx={{ display: 'flex', flexGrow: 1, flexDirection: 'column', justifyContent: 'center' }}>
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 4, mb: 5 }}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>Revenue This Week</Typography>
-                  <Typography variant="h3" color="primary.main" sx={{ fontWeight: 900, letterSpacing: -1 }}>$4,280.50</Typography>
-                  <Typography variant="caption" color="success.main" sx={{ fontWeight: 'bold' }}>+18% from last week</Typography>
-                </Box>
-                <Box sx={{ borderLeft: { sm: '1px solid #eee' }, pl: { sm: 4 } }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>Orders This Week</Typography>
-                  <Typography variant="h3" color="text.primary" sx={{ fontWeight: 900, letterSpacing: -1 }}>142</Typography>
-                  <Typography variant="caption" color="success.main" sx={{ fontWeight: 'bold' }}>+5% from last week</Typography>
-                </Box>
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>Monthly Sales Target ($20,000)</Typography>
-                  <Typography variant="body2" color="primary.main" sx={{ fontWeight: 'bold' }}>62%</Typography>
-                </Box>
-                <Box sx={{ width: '100%', height: 12, bgcolor: 'grey.100', borderRadius: 6, overflow: 'hidden' }}>
-                  <Box sx={{ width: '62%', height: '100%', bgcolor: 'primary.main', borderRadius: 6, transition: 'width 1s ease-in-out' }} />
-                </Box>
-              </Box>
-              
-              <Box sx={{ mt: 'auto', display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: 'success.50', borderRadius: 3 }}>
-                <Box sx={{ bgcolor: 'success.100', p: 1, borderRadius: 2, display: 'flex', color: 'success.main' }}>
-                  <TrendingUpIcon />
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="success.dark" sx={{ fontWeight: 'bold' }}>
-                    Store is performing exceptionally well!
-                  </Typography>
-                  <Typography variant="caption" color="success.dark">
-                    You are on track to beat your highest sales month.
+            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', pt: 4, gap: 1 }}>
+              {/* Simple Bar Chart Representation using MUI Boxes */}
+              {[40, 70, 45, 90, 65, 85, 100].map((height, index) => (
+                <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: 1 }}>
+                  <Box 
+                    sx={{ 
+                      width: { xs: 20, sm: 30, md: 40 }, 
+                      height: `${height * 2.5}px`, 
+                      background: index === 6 
+                        ? `linear-gradient(180deg, ${theme.palette.primary.main} 0%, ${alpha(theme.palette.primary.main, 0.2)} 100%)`
+                        : `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.4)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
+                      borderRadius: '8px 8px 0 0',
+                      transition: 'height 0.5s ease',
+                      '&:hover': {
+                        background: `linear-gradient(180deg, ${theme.palette.primary.light} 0%, ${alpha(theme.palette.primary.main, 0.2)} 100%)`,
+                      }
+                    }} 
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 'bold' }}>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}
                   </Typography>
                 </Box>
-              </Box>
+              ))}
             </Box>
           </Paper>
         </Grid>
         
         {/* Recent Orders List */}
-        <Grid size={{ xs: 12, md: 5, lg: 4 }}>
-          <Paper sx={{ p: 4, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.03)', height: '100%', border: '1px solid', borderColor: 'grey.100' }}>
+        <Grid item xs={12} lg={4}>
+          <Paper sx={{ ...glassStyle, p: 4, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Recent Orders</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800 }}>Recent Orders</Typography>
               <IconButton size="small"><MoreVertIcon /></IconButton>
             </Box>
             
@@ -218,16 +282,28 @@ const Dashboard = () => {
                     alignItems: 'center', 
                     p: 2, 
                     borderRadius: 3, 
-                    bgcolor: 'grey.50',
-                    transition: '0.2s',
-                    '&:hover': { bgcolor: 'grey.100', transform: 'translateX(4px)' }
+                    bgcolor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha('#000', 0.02),
+                    border: '1px solid',
+                    borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha('#000', 0.03),
+                    transition: 'all 0.2s ease',
+                    '&:hover': { 
+                      bgcolor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha('#000', 0.04), 
+                      transform: 'translateX(4px)' 
+                    }
                   }}
                 >
-                  <Avatar sx={{ bgcolor: `${getStatusColor(order.status)}.100`, color: `${getStatusColor(order.status)}.main`, mr: 2, width: 44, height: 44, fontWeight: 'bold' }}>
+                  <Avatar sx={{ 
+                    bgcolor: alpha(theme.palette[getStatusColor(order.status)].main, 0.15), 
+                    color: theme.palette[getStatusColor(order.status)].main, 
+                    mr: 2, 
+                    width: 44, 
+                    height: 44, 
+                    fontWeight: 'bold' 
+                  }}>
                     {order.customer.charAt(0)}
                   </Avatar>
                   <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 700 }}>
                       {order.customer}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
@@ -235,13 +311,14 @@ const Dashboard = () => {
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
                       ${order.amount.toFixed(2)}
                     </Typography>
                     <Chip 
                       size="small" 
                       label={order.status} 
                       color={getStatusColor(order.status)}
+                      variant={isDark ? "outlined" : "filled"}
                       sx={{ height: 22, fontSize: '0.65rem', mt: 0.5, fontWeight: 'bold', borderRadius: 1 }}
                     />
                   </Box>
@@ -249,10 +326,10 @@ const Dashboard = () => {
               ))}
             </Box>
             
-            <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'grey.100', textAlign: 'center' }}>
-              <Typography variant="body2" color="primary.main" sx={{ cursor: 'pointer', fontWeight: 'bold', '&:hover': { textDecoration: 'underline' } }}>
+            <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha('#000', 0.1), textAlign: 'center' }}>
+              <Button color="primary" sx={{ fontWeight: 'bold', textTransform: 'none' }}>
                 View All Orders
-              </Typography>
+              </Button>
             </Box>
           </Paper>
         </Grid>
