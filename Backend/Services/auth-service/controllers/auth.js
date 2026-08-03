@@ -674,3 +674,107 @@ export const resendOtp = async (req, res) => {
   }
 };
 
+export const sellerSignup = async (req, res) => {
+  const connection = await pool.getConnection();
+  console.log("Seller Signup api hit");
+
+  try {
+    const { full_name, email, password, role = "SELLER" } = req.body;
+
+    if (!full_name || !email || !password) {
+      return res.status(400).json({ success: false, message: "Full name, email and password are required." });
+    }
+
+    await connection.beginTransaction();
+
+    const [existingUser] = await connection.execute("SELECT id, password_hash, is_email_verified FROM users WHERE email = ?", [email]);
+    let userId;
+    let isExisting = false;
+    let isEmailVerified = false;
+
+    const [rolesList] = await connection.execute("SELECT id FROM roles WHERE name = ?", [role]);
+    if (rolesList.length === 0) {
+      await connection.rollback();
+      return res.status(500).json({ success: false, message: `${role} role not found.` });
+    }
+    const assignedRoleId = rolesList[0].id;
+
+    if (existingUser.length > 0) {
+      userId = existingUser[0].id;
+      isEmailVerified = existingUser[0].is_email_verified;
+      isExisting = true;
+      const isPasswordValid = await bcrypt.compare(password, existingUser[0].password_hash);
+      if (!isPasswordValid) {
+        await connection.rollback();
+        return res.status(401).json({ success: false, message: "User exists but password is incorrect." });
+      }
+      const [existingRoles] = await connection.execute("SELECT role_id FROM user_roles WHERE user_id = ? AND role_id = ?", [userId, assignedRoleId]);
+      if (existingRoles.length === 0) {
+        await connection.execute(`INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)`, [userId, assignedRoleId]);
+      }
+    } else {
+      userId = uuidv4();
+      const passwordHash = await bcrypt.hash(password, 10);
+      await connection.execute(`INSERT INTO users (id, full_name, email, password_hash) VALUES (?, ?, ?, ?)`, [userId, full_name, email, passwordHash]);
+      await connection.execute(`INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)`, [userId, assignedRoleId]);
+    }
+
+    await connection.commit();
+
+    const [allUserRoles] = await connection.execute(`SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?`, [userId]);
+    const assignedRolesArray = allUserRoles.map(r => r.name);
+
+    if (!isExisting || !isEmailVerified) {
+      const otp = generateOtp();
+      await storeOTP(email, otp);
+      await sendEmail({
+        to: email,
+        subject: "Email Verification OTP",
+        html: `<p>Your OTP is ${otp}</p>`
+      });
+    }
+
+    const payload = { userId, email, roles: assignedRolesArray };
+    const accessToken = createAccessToken(payload);
+    const refreshToken = createRefreshToken({ userId });
+
+    const tokenId = uuidv4();
+    const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await pool.query(`INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)`, [tokenId, userId, tokenHash, expiresAt]);
+
+    // Publish SELLER_CREATED Kafka Event for User Service
+    try {
+      console.log("Publishing SELLER_CREATED event to Kafka...");
+      await publishEvent(TOPICS.USER_EVENTS, {
+        eventType: "SELLER_CREATED",
+        userId: userId,
+        email: email,
+        fullName: full_name,
+        businessName: req.body.businessName,
+        ownerName: req.body.ownerName,
+        phone: req.body.phone,
+        businessType: req.body.businessType,
+        gstNumber: req.body.gstNumber,
+        panNumber: req.body.panNumber,
+      });
+      console.log(`📡 Kafka SELLER_CREATED event published successfully for ${email}`);
+    } catch (kafkaErr) {
+      console.error("❌ Kafka publishing error:", kafkaErr);
+    }
+
+    await setAuthCookies(res, accessToken, refreshToken);
+    return res.status(201).json({
+      success: true,
+      message: isExisting ? "Seller role added successfully." : "Seller registered successfully.",
+      user: { id: userId, full_name, email, roles: assignedRolesArray },
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Seller Signup Error:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  } finally {
+    connection.release();
+  }
+};
+

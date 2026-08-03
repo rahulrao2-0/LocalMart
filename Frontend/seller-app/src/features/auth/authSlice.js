@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { login as loginApi, register as registerApi, logout as logoutApi } from '../../services/authApi';
+import { login as loginApi, registerSeller as registerSellerApi, logout as logoutApi } from '../../services/authApi';
 import { apiFetch } from '../../services/api';
 
 export const login = createAsyncThunk(
@@ -41,41 +41,17 @@ export const register = createAsyncThunk(
   'auth/register',
   async (credentials, { rejectWithValue }) => {
     try {
-      // 1. Register with Auth Service (expects full_name instead of ownerName)
-      const authPayload = {
+      // 1. Call the dedicated Seller Registration API
+      const sellerPayload = {
         ...credentials,
-        full_name: credentials.ownerName,
+        full_name: credentials.ownerName, // Backend might expect this
         role: 'SELLER'
       };
       
-      const authResponse = await registerApi(authPayload);
+      const authResponse = await registerSellerApi(sellerPayload);
       
-      // Backend automatically sets the cookie tokens here.
+      // Backend handles everything and emits Kafka events to User Service.
       
-      // 2. Now that cookies are set, create Seller Profile in User Service
-      try {
-        await apiFetch('/sellers/profile', {
-          method: 'POST',
-          body: JSON.stringify({
-            businessName: credentials.businessName,
-            ownerName: credentials.ownerName,
-            phone: credentials.phone,
-            businessType: credentials.businessType,
-            gstNumber: credentials.gstNumber,
-            panNumber: credentials.panNumber,
-            addressType: credentials.addressType,
-            addressLine1: credentials.addressLine1,
-            addressLine2: credentials.addressLine2,
-            city: credentials.city,
-            state: credentials.state,
-            postalCode: credentials.postalCode
-          })
-        });
-      } catch (profileError) {
-        console.error("Failed to create seller profile:", profileError);
-        // We don't reject here because auth succeeded, but we log the error.
-      }
-
       localStorage.setItem('seller_user', JSON.stringify(authResponse.user));
       return authResponse;
     } catch (error) {

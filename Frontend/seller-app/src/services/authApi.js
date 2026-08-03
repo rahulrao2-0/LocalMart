@@ -16,6 +16,14 @@ export const register = async (userData) => {
   return response.data;
 };
 
+export const registerSeller = async (sellerData) => {
+  const response = await apiFetch('/auth/seller/signup', {
+    method: 'POST',
+    body: JSON.stringify(sellerData)
+  });
+  return response.data;
+};
+
 export const getMe = async () => {
   const response = await apiFetch('/auth/me');
   return response.data;

@@ -1,5 +1,6 @@
 import { kafka, TOPICS, initTopics } from "@localmart/shared";
 import { UserProfile } from "../models/UserProfile.js";
+import { Seller } from "../models/Seller.js";
 
 export const startUserConsumer = async () => {
   try {
@@ -37,6 +38,27 @@ export const startUserConsumer = async () => {
               console.log(`✅ [USER SERVICE] Created new MongoDB UserProfile document:`, newProfile._id);
             } else {
               console.log(`ℹ️ [USER SERVICE] User Profile already exists in MongoDB for User ID: ${userId}`);
+            }
+          } else if (payload.eventType === "SELLER_CREATED") {
+            const { userId, email, businessName, ownerName, phone, businessType, gstNumber, panNumber } = payload;
+            console.log(`⚙️ [KAFKA CONSUMER] Processing SELLER_CREATED for User ID: ${userId}, Business: ${businessName}`);
+
+            const existingSeller = await Seller.findOne({ authUserId: userId });
+            if (!existingSeller) {
+              const newSeller = await Seller.create({
+                authUserId: userId,
+                email: email,
+                businessName: businessName,
+                ownerName: ownerName,
+                phone: phone,
+                businessType: businessType || "RETAIL",
+                gstNumber: gstNumber || "",
+                panNumber: panNumber || "",
+              });
+              console.log(`✅ [USER SERVICE] Created new MongoDB Seller document:`, newSeller._id);
+            } else {
+              console.log(`ℹ️ [USER SERVICE] Seller Profile already exists in MongoDB for User ID: ${userId}`);
+              // Optionally update fields here if required.
             }
           } else {
             console.log(`⚠️ [KAFKA CONSUMER] Unhandled eventType: "${payload.eventType}"`);
