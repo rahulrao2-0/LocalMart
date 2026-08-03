@@ -48,9 +48,9 @@ export const startUserConsumer = async () => {
               const newSeller = await Seller.create({
                 authUserId: userId,
                 email: email,
-                businessName: businessName,
-                ownerName: ownerName,
-                phone: phone,
+                businessName: businessName || 'Unknown Business',
+                ownerName: ownerName || 'Unknown Owner',
+                phone: phone || '0000000000',
                 businessType: businessType || "RETAIL",
                 gstNumber: gstNumber || "",
                 panNumber: panNumber || "",

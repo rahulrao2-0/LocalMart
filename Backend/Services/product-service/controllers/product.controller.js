@@ -14,7 +14,7 @@ export const getProducts = async (req, res) => {
     const limitNum = Number(limit) || 2;
 
     // Create a dynamic cache key based on the query parameters
-    const cacheKey = `products:page:${pageNum}:limit:${limitNum}:cat:${category || 'all'}:kw:${keyword || 'none'}`;
+    const cacheKey = `products:page:${pageNum}:limit:${limitNum}:cat:${category || 'all'}:kw:${keyword || 'none'}:seller:${sellerId || 'all'}`;
 
     // 1. Check Redis Cache
     try {
@@ -116,6 +116,11 @@ export const createProduct = async (req, res) => {
       console.error("Kafka publish error:", err);
     }
 
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(keys);
+    } catch(err) {}
+
     return res.status(201).json({ success: true, data: product });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -175,6 +180,11 @@ export const updateProduct = async (req, res) => {
       });
     } catch(err) {}
 
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(keys);
+    } catch(err) {}
+
     return res.status(200).json({ success: true, data: product });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -204,6 +214,11 @@ export const deleteProduct = async (req, res) => {
         eventType: "PRODUCT_DELETED",
         productId: product._id,
       });
+    } catch(err) {}
+
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(keys);
     } catch(err) {}
 
     return res.status(200).json({ success: true, data: {} });
