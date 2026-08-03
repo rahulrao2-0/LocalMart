@@ -21,6 +21,7 @@ import {
   useTheme,
   Dialog,
   Tooltip,
+  LinearProgress
 } from "@mui/material";
 import {
   ShoppingCart as ShoppingCartIcon,
@@ -31,13 +32,11 @@ import {
   LocalShippingOutlined as LocalShippingIcon,
   StorefrontOutlined as StorefrontIcon,
   CheckCircle as CheckCircleIcon,
-  ShoppingBagOutlined as ShoppingBagIcon,
   LocalOfferOutlined as LocalOfferIcon,
   ShieldOutlined,
-  VerifiedUserOutlined,
   AccessTime,
   StoreOutlined,
-  PaymentsOutlined,
+  Celebration
 } from "@mui/icons-material";
 
 export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart, onClearCart, themeMode }) {
@@ -55,9 +54,14 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
 
   // Calculate Subtotal & Fees
   const subtotal = cart.reduce((acc, item) => acc + (item.shop?.price || 0) * item.quantity, 0);
-  const deliveryFee = deliveryMethod === "delivery" ? (subtotal > 0 ? 30 : 0) : 0;
+  const deliveryFee = deliveryMethod === "delivery" ? (subtotal >= 500 ? 0 : 30) : 0;
   const packagingFee = subtotal > 0 ? 15 : 0;
   const totalPayable = Math.max(0, subtotal + deliveryFee + packagingFee - discount);
+  
+  // Free shipping progress logic
+  const freeShippingThreshold = 500;
+  const amountToFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
+  const progressPercentage = Math.min(100, (subtotal / freeShippingThreshold) * 100);
 
   const handleApplyPromo = () => {
     setPromoError("");
@@ -70,12 +74,8 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
     } else if (code === "FREESHIP") {
       setDiscount(deliveryFee);
       setPromoSuccess("🚚 Free Delivery promo applied!");
-    } else if (code === "WELCOME50") {
-      const discAmount = Math.min(50, subtotal);
-      setDiscount(discAmount);
-      setPromoSuccess(`🎁 Welcome offer applied! Saved ₹${discAmount}`);
     } else {
-      setPromoError("Invalid promo code. Try 'LOCAL10' or 'FREESHIP'");
+      setPromoError("Invalid promo code. Try 'LOCAL10'");
     }
   };
 
@@ -104,103 +104,28 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
       sx={{
         minHeight: "100vh",
         bgcolor: "background.default",
-        py: { xs: 2.5, sm: 4, md: 5 },
+        py: { xs: 2, sm: 4 },
         px: { xs: 1.5, sm: 3, md: 4 },
-        position: "relative",
-        overflow: "hidden",
       }}
     >
-      {/* Dynamic Background Glow Accents */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: "-5%",
-          left: "-5%",
-          width: { xs: "250px", md: "450px" },
-          height: { xs: "250px", md: "450px" },
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(108, 93, 211, 0.12) 0%, rgba(0,0,0,0) 70%)",
-          filter: "blur(50px)",
-          pointerEvents: "none",
-        }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: "-10%",
-          right: "-5%",
-          width: { xs: "300px", md: "500px" },
-          height: { xs: "300px", md: "500px" },
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255, 117, 81, 0.1) 0%, rgba(0,0,0,0) 70%)",
-          filter: "blur(50px)",
-          pointerEvents: "none",
-        }}
-      />
-
-      <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+      <Container maxWidth="lg">
         {/* Header Navigation */}
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="space-between"
-          sx={{ mb: { xs: 3, md: 4 } }}
+          sx={{ mb: 4 }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
-            <Button
-              onClick={() => navigate("/")}
-              startIcon={<ArrowBackIcon fontSize="small" />}
-              size="small"
-              sx={{
-                minWidth: { xs: 38, sm: "auto" },
-                px: { xs: 1.2, sm: 2.2 },
-                py: { xs: 0.8, sm: 1 },
-                borderRadius: 3,
-                fontWeight: 700,
-                fontSize: { xs: "0.825rem", sm: "0.9rem" },
-                color: "text.primary",
-                backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.9)",
-                border: "1px solid",
-                borderColor: "divider",
-                boxShadow: themeMode === "dark" ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.05)",
-                "&:hover": {
-                  backgroundColor: themeMode === "dark" ? "rgba(255, 255, 255, 0.1)" : "rgba(108, 93, 211, 0.08)",
-                  borderColor: "primary.main",
-                },
-                "& .MuiButton-startIcon": {
-                  mr: { xs: 0.5, sm: 1 },
-                },
-              }}
-            >
-              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                Back to Stores
-              </Box>
-            </Button>
-
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <IconButton onClick={() => navigate("/")} sx={{ bgcolor: 'background.paper', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+              <ArrowBackIcon />
+            </IconButton>
             <Box>
-              <Typography
-                variant="h5"
-                fontWeight={800}
-                sx={{
-                  fontSize: { xs: "1.25rem", sm: "1.65rem", md: "1.9rem" },
-                  letterSpacing: "-0.5px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                }}
-              >
-                Shopping Cart
+              <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: -1, display: "flex", alignItems: "center", gap: 1.5 }}>
+                Your Cart
                 {cart.length > 0 && (
-                  <Chip
-                    label={`${cart.reduce((a, b) => a + b.quantity, 0)} Items`}
-                    color="primary"
-                    size="small"
-                    sx={{ fontWeight: 800, borderRadius: 2 }}
-                  />
+                  <Chip label={`${cart.reduce((a, b) => a + b.quantity, 0)} Items`} color="primary" sx={{ fontWeight: 800, borderRadius: 2 }} />
                 )}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" }, mt: 0.3 }}>
-                Review items, choose delivery method, and place order from local shops
               </Typography>
             </Box>
           </Box>
@@ -209,10 +134,9 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
             <Button
               variant="text"
               color="error"
-              size="small"
               onClick={onClearCart}
               startIcon={<DeleteOutlineIcon />}
-              sx={{ fontWeight: 700, borderRadius: 2.5, display: { xs: "none", sm: "flex" } }}
+              sx={{ fontWeight: 800, borderRadius: 2 }}
             >
               Clear Cart
             </Button>
@@ -224,186 +148,116 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 4, sm: 7 },
+              p: { xs: 5, sm: 8 },
               textAlign: "center",
-              borderRadius: 5,
-              border: "1px solid",
+              borderRadius: 6,
+              border: "1px dashed",
               borderColor: "divider",
-              bgcolor: "background.paper",
-              boxShadow: themeMode === "dark" ? "0 10px 40px rgba(0,0,0,0.4)" : "0 10px 40px rgba(108,93,211,0.06)",
+              bgcolor: "transparent",
             }}
           >
-            <Avatar
-              sx={{
-                width: 90,
-                height: 90,
-                mx: "auto",
-                mb: 2.5,
-                background: "linear-gradient(135deg, rgba(108, 93, 211, 0.2) 0%, rgba(255, 117, 81, 0.2) 100%)",
-                color: "primary.main",
-              }}
-            >
-              <ShoppingCartIcon sx={{ fontSize: 46 }} />
+            <Avatar sx={{ width: 120, height: 120, mx: "auto", mb: 3, bgcolor: 'primary.50', color: "primary.main" }}>
+              <ShoppingCartIcon sx={{ fontSize: 64 }} />
             </Avatar>
-            <Typography variant="h5" fontWeight={800} gutterBottom>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1 }}>
               Your Cart is Empty
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3.5, maxWidth: 450, mx: "auto" }}>
-              Looks like you haven't added any products from local stores yet. Browse products from shops in your neighborhood!
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 400, mx: "auto" }}>
+              Discover amazing products from your local neighborhood stores.
             </Typography>
             <Button
               variant="contained"
               color="primary"
               size="large"
               onClick={() => navigate("/")}
-              sx={{
-                borderRadius: 3.5,
-                px: 4,
-                py: 1.3,
-                fontWeight: 800,
-                fontSize: "1rem",
-                boxShadow: "0 8px 25px rgba(108, 93, 211, 0.35)",
-              }}
+              sx={{ borderRadius: 3, px: 5, py: 1.5, fontWeight: 800, fontSize: "1.1rem" }}
             >
               Explore Nearby Shops
             </Button>
           </Paper>
         ) : (
-          /* Cart Grid Layout */
-          <Grid container spacing={{ xs: 2.5, md: 3.5 }}>
-            {/* Left Column: Cart Items */}
-            <Grid size={{ xs: 12, md: 8 }}>
-              <Stack spacing={2.5}>
+          /* Cart Layout */
+          <Grid container spacing={4}>
+            {/* Left Column: Cart Items & Free Shipping Progress */}
+            <Grid item xs={12} md={8}>
+              
+              {/* Free Shipping Progress Bar */}
+              <Paper sx={{ p: 3, mb: 4, borderRadius: 4, border: '1px solid', borderColor: 'primary.100', bgcolor: 'primary.50' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'primary.dark', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Celebration fontSize="small" /> 
+                    {amountToFreeShipping > 0 ? `Add ₹${amountToFreeShipping} more for FREE Delivery!` : "You unlocked FREE Delivery!"}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'primary.main' }}>
+                    {amountToFreeShipping > 0 ? `₹${subtotal} / ₹${freeShippingThreshold}` : 'Goal Reached!'}
+                  </Typography>
+                </Box>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={progressPercentage} 
+                  sx={{ height: 10, borderRadius: 5, bgcolor: 'primary.100', '& .MuiLinearProgress-bar': { borderRadius: 5 } }} 
+                />
+              </Paper>
+
+              <Stack spacing={3}>
                 {cart.map((item, index) => (
                   <Card
                     key={`${item.product.id}-${item.shop.shopName}-${index}`}
                     elevation={0}
                     sx={{
-                      p: { xs: 2, sm: 2.8 },
-                      borderRadius: 4.5,
+                      p: 2.5,
+                      borderRadius: 4,
                       border: "1px solid",
                       borderColor: "divider",
-                      bgcolor: "background.paper",
-                      boxShadow: themeMode === "dark"
-                        ? "0 8px 24px rgba(0,0,0,0.3)"
-                        : "0 8px 24px rgba(108, 93, 211, 0.04)",
-                      transition: "transform 0.2s, box-shadow 0.2s",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                        boxShadow: "0 10px 30px rgba(108, 93, 211, 0.12)",
-                      },
+                      transition: "0.2s ease",
+                      "&:hover": { borderColor: "primary.main", boxShadow: "0 10px 30px rgba(0,0,0,0.05)" },
                     }}
                   >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: { xs: "column", sm: "row" },
-                        alignItems: { xs: "flex-start", sm: "center" },
-                        justifyContent: "space-between",
-                        gap: 2,
-                      }}
-                    >
-                      {/* Product & Store Info */}
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 1 }}>
-                          <Chip
-                            icon={<StoreOutlined sx={{ fontSize: "15px !important" }} />}
-                            label={item.shop.shopName}
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            sx={{ fontWeight: 700, borderRadius: 2 }}
-                          />
-                          <Chip
-                            icon={<AccessTime sx={{ fontSize: "14px !important" }} />}
-                            label={`${item.shop.distanceKm || 0.8} km away (~20 mins)`}
-                            size="small"
-                            sx={{ fontSize: "0.75rem", fontWeight: 600 }}
-                          />
-                        </Box>
-
-                        <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: "1.05rem", sm: "1.2rem" } }}>
-                          {item.product.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.3 }}>
-                          Category: <strong>{item.product.category || "General"}</strong> • Brand: {item.product.brand || "Local Quality"}
-                        </Typography>
-
-                        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, mt: 1 }}>
-                          <Typography variant="subtitle1" fontWeight={800} color="primary.main">
-                            ₹{item.shop.price}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            per unit
-                          </Typography>
-                        </Box>
+                    <Box sx={{ display: "flex", gap: 3, flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: 'flex-start', sm: 'center' } }}>
+                      
+                      {/* Product Placeholder Image */}
+                      <Box sx={{ width: 100, height: 100, borderRadius: 3, bgcolor: 'grey.100', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, flexShrink: 0 }}>
+                        {item.product.category === "Furniture" ? "🛋️" : item.product.category === "Vegetables" ? "🥬" : "🛒"}
                       </Box>
 
-                      {/* Controls: Quantity & Item Subtotal */}
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          width: { xs: "100%", sm: "auto" },
-                          gap: { xs: 1.5, sm: 3 },
-                          pt: { xs: 1, sm: 0 },
-                          borderTop: { xs: "1px solid", sm: "none" },
-                          borderColor: "divider",
-                        }}
-                      >
-                        {/* Quantity Counter */}
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            bgcolor: themeMode === "dark" ? "rgba(255, 255, 255, 0.05)" : "rgba(108, 93, 211, 0.06)",
-                            borderRadius: 3,
-                            p: 0.5,
-                            border: "1px solid",
-                            borderColor: "divider",
-                          }}
-                        >
-                          <IconButton
-                            size="small"
-                            onClick={() => onUpdateQuantity(index, -1)}
-                            sx={{ color: "text.primary" }}
-                          >
-                            <RemoveIcon fontSize="small" />
-                          </IconButton>
-                          <Typography variant="body1" fontWeight={800} sx={{ px: 1.5, minWidth: 24, textAlign: "center" }}>
-                            {item.quantity}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            onClick={() => onUpdateQuantity(index, 1)}
-                            sx={{ color: "primary.main" }}
-                          >
-                            <AddIcon fontSize="small" />
-                          </IconButton>
+                      {/* Product Info */}
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+                          <Chip icon={<StoreOutlined />} label={item.shop.shopName} size="small" variant="outlined" sx={{ fontWeight: 700, borderRadius: 1.5 }} />
+                          <Chip icon={<AccessTime />} label={`${item.shop.distanceKm} km`} size="small" sx={{ fontWeight: 700, borderRadius: 1.5, bgcolor: 'grey.100' }} />
                         </Box>
 
-                        <Box sx={{ textAlign: "right" }}>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                            Item Total
-                          </Typography>
-                          <Typography variant="h6" fontWeight={800}>
-                            ₹{item.shop.price * item.quantity}
-                          </Typography>
-                        </Box>
+                        <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                          {item.product.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 1 }}>
+                          {item.product.brand}
+                        </Typography>
 
-                        <Tooltip title="Remove item">
-                          <IconButton
-                            color="error"
-                            onClick={() => onRemoveFromCart(index)}
-                            sx={{
-                              bgcolor: "rgba(255, 77, 77, 0.08)",
-                              "&:hover": { bgcolor: "rgba(255, 77, 77, 0.18)" },
-                            }}
-                          >
+                        <Typography variant="h6" color="primary.main" sx={{ fontWeight: 900 }}>
+                          ₹{item.shop.price}
+                        </Typography>
+                      </Box>
+
+                      {/* Quantity & Delete */}
+                      <Box sx={{ display: "flex", flexDirection: { xs: 'row', sm: 'column' }, alignItems: { xs: 'center', sm: 'flex-end' }, justifyContent: 'space-between', width: { xs: '100%', sm: 'auto' }, gap: 2 }}>
+                        <Tooltip title="Remove">
+                          <IconButton color="error" onClick={() => onRemoveFromCart(index)} sx={{ bgcolor: 'error.50' }}>
                             <DeleteOutlineIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        
+                        <Box sx={{ display: "flex", alignItems: "center", bgcolor: "background.default", borderRadius: 10, border: '1px solid', borderColor: 'divider', p: 0.5 }}>
+                          <IconButton size="small" onClick={() => onUpdateQuantity(index, -1)}>
+                            <RemoveIcon fontSize="small" />
+                          </IconButton>
+                          <Typography variant="body1" sx={{ fontWeight: 800, px: 2, minWidth: 20, textAlign: "center" }}>
+                            {item.quantity}
+                          </Typography>
+                          <IconButton size="small" onClick={() => onUpdateQuantity(index, 1)} color="primary">
+                            <AddIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </Box>
                     </Box>
                   </Card>
@@ -411,141 +265,104 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
               </Stack>
             </Grid>
 
-            {/* Right Column: Fulfillment & Payment Summary */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            {/* Right Column: Checkout Summary */}
+            <Grid item xs={12} md={4}>
               <Paper
                 elevation={0}
                 sx={{
-                  p: { xs: 2.5, sm: 3.5 },
+                  p: 4,
                   borderRadius: 5,
                   border: "1px solid",
                   borderColor: "divider",
-                  bgcolor: "background.paper",
-                  boxShadow: themeMode === "dark"
-                    ? "0 10px 35px rgba(0,0,0,0.4)"
-                    : "0 10px 35px rgba(108, 93, 211, 0.06)",
                   position: "sticky",
                   top: 24,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.03)'
                 }}
               >
                 {/* Fulfillment Selection */}
-                <Typography variant="subtitle1" fontWeight={800} gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <LocalShippingIcon color="primary" fontSize="small" /> Delivery Preference
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+                  Fulfillment
                 </Typography>
-
-                <RadioGroup value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} sx={{ mb: 3 }}>
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 1.5,
-                      mb: 1.5,
-                      borderRadius: 3.5,
-                      borderColor: deliveryMethod === "delivery" ? "primary.main" : "divider",
-                      bgcolor: deliveryMethod === "delivery" ? (themeMode === "dark" ? "rgba(108, 93, 211, 0.1)" : "rgba(108, 93, 211, 0.04)") : "transparent",
-                    }}
-                  >
+                <RadioGroup value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} sx={{ mb: 4 }}>
+                  <Paper variant="outlined" sx={{ p: 2, mb: 1.5, borderRadius: 3, borderColor: deliveryMethod === "delivery" ? "primary.main" : "divider", bgcolor: deliveryMethod === "delivery" ? 'primary.50' : 'transparent', transition: 'all 0.2s' }}>
                     <FormControlLabel
                       value="delivery"
-                      control={<Radio size="small" />}
+                      control={<Radio />}
                       label={
                         <Box>
-                          <Typography variant="body2" fontWeight={700}>
-                            Home Delivery (₹30)
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Delivered to your doorstep in ~30 mins
-                          </Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Home Delivery</Typography>
+                          <Typography variant="caption" color="text.secondary">Usually within 30 mins</Typography>
                         </Box>
                       }
+                      sx={{ m: 0, width: '100%' }}
                     />
                   </Paper>
-
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 3.5,
-                      borderColor: deliveryMethod === "pickup" ? "primary.main" : "divider",
-                      bgcolor: deliveryMethod === "pickup" ? (themeMode === "dark" ? "rgba(108, 93, 211, 0.1)" : "rgba(108, 93, 211, 0.04)") : "transparent",
-                    }}
-                  >
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, borderColor: deliveryMethod === "pickup" ? "primary.main" : "divider", bgcolor: deliveryMethod === "pickup" ? 'primary.50' : 'transparent', transition: 'all 0.2s' }}>
                     <FormControlLabel
                       value="pickup"
-                      control={<Radio size="small" />}
+                      control={<Radio />}
                       label={
                         <Box>
-                          <Typography variant="body2" fontWeight={700}>
-                            Store Self-Pickup (Free)
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Ready for pickup in ~15 mins
-                          </Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>Store Pickup (Free)</Typography>
+                          <Typography variant="caption" color="text.secondary">Pick up yourself</Typography>
                         </Box>
                       }
+                      sx={{ m: 0, width: '100%' }}
                     />
                   </Paper>
                 </RadioGroup>
 
-                {/* Promo Code Coupon Section */}
-                <Typography variant="subtitle2" fontWeight={800} gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <LocalOfferIcon color="primary" fontSize="small" /> Apply Promo Code
+                {/* Promo Code */}
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+                  Offers & Promos
                 </Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
                   <TextField
-                    placeholder="e.g. LOCAL10"
+                    placeholder="Enter code (e.g. LOCAL10)"
                     size="small"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
                     fullWidth
-                    slotProps={{
-                      input: {
-                        sx: { borderRadius: 2.5, fontSize: "0.875rem" },
-                      },
-                    }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
                   />
-                  <Button
-                    variant="contained"
-                    onClick={handleApplyPromo}
-                    sx={{ borderRadius: 2.5, px: 2.5, fontWeight: 700, textTransform: "none" }}
-                  >
+                  <Button variant="contained" onClick={handleApplyPromo} sx={{ borderRadius: 3, px: 3, fontWeight: 800, boxShadow: 'none' }}>
                     Apply
                   </Button>
                 </Stack>
+                {promoSuccess && <Alert severity="success" sx={{ mb: 3, borderRadius: 2, '& .MuiAlert-message': { fontWeight: 'bold' } }}>{promoSuccess}</Alert>}
+                {promoError && <Alert severity="error" sx={{ mb: 3, borderRadius: 2, '& .MuiAlert-message': { fontWeight: 'bold' } }}>{promoError}</Alert>}
 
-                {promoSuccess && <Alert severity="success" sx={{ mb: 2, py: 0.4, borderRadius: 2.5, fontSize: "0.8rem" }}>{promoSuccess}</Alert>}
-                {promoError && <Alert severity="error" sx={{ mb: 2, py: 0.4, borderRadius: 2.5, fontSize: "0.8rem" }}>{promoError}</Alert>}
-
-                <Divider sx={{ my: 2.5 }} />
+                <Divider sx={{ my: 3, borderStyle: 'dashed' }} />
 
                 {/* Bill Breakdown */}
-                <Typography variant="subtitle1" fontWeight={800} gutterBottom>
-                  Bill Breakdown
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>
+                  Bill Details
                 </Typography>
-                <Stack spacing={1.5} sx={{ mb: 3 }}>
+                <Stack spacing={2} sx={{ mb: 3 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography variant="body2" color="text.secondary">Item Subtotal</Typography>
-                    <Typography variant="body2" fontWeight={700}>₹{subtotal}</Typography>
+                    <Typography variant="body1" color="text.secondary">Subtotal</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 800 }}>₹{subtotal}</Typography>
                   </Box>
                   <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography variant="body2" color="text.secondary">Delivery Charge</Typography>
-                    <Typography variant="body2" fontWeight={700} color={deliveryFee === 0 ? "success.main" : "text.primary"}>
+                    <Typography variant="body1" color="text.secondary">Delivery Fee</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 800 }} color={deliveryFee === 0 ? "success.main" : "text.primary"}>
                       {deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                    <Typography variant="body2" color="text.secondary">Packaging & Service Fee</Typography>
-                    <Typography variant="body2" fontWeight={700}>₹{packagingFee}</Typography>
+                    <Typography variant="body1" color="text.secondary">Packaging Fee</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 800 }}>₹{packagingFee}</Typography>
                   </Box>
                   {discount > 0 && (
                     <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                      <Typography variant="body2" color="success.main" fontWeight={700}>Coupon Discount</Typography>
-                      <Typography variant="body2" fontWeight={800} color="success.main">-₹{discount}</Typography>
+                      <Typography variant="body1" color="success.main" sx={{ fontWeight: 800 }}>Discount Applied</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 900 }} color="success.main">-₹{discount}</Typography>
                     </Box>
                   )}
-                  <Divider sx={{ my: 1 }} />
-                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <Typography variant="subtitle1" fontWeight={800}>Total Payable</Typography>
-                    <Typography variant="h5" fontWeight={800} color="primary.main">
+                  
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 3, display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>Total Payable</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: "primary.main" }}>
                       ₹{totalPayable}
                     </Typography>
                   </Box>
@@ -553,28 +370,19 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
 
                 <Button
                   variant="contained"
-                  color="primary"
                   fullWidth
                   size="large"
                   onClick={handlePlaceOrder}
                   disabled={isCheckingOut}
-                  sx={{
-                    py: 1.5,
-                    borderRadius: 3.5,
-                    fontWeight: 800,
-                    fontSize: "1.05rem",
-                    background: "linear-gradient(135deg, #6C5DD3 0%, #FF7551 100%)",
-                    boxShadow: "0 8px 25px rgba(108, 93, 211, 0.35)",
-                  }}
+                  sx={{ py: 2, borderRadius: 3, fontWeight: 900, fontSize: "1.1rem" }}
                 >
-                  {isCheckingOut ? "Processing Order..." : `Proceed to Pay ₹${totalPayable}`}
+                  {isCheckingOut ? "Processing..." : `Checkout • ₹${totalPayable}`}
                 </Button>
 
-                {/* Safety Guarantee */}
-                <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 2.5 }}>
-                  <ShieldOutlined color="action" sx={{ fontSize: 18 }} />
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                    Secure 256-bit encrypted checkout
+                <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mt: 3 }}>
+                  <ShieldOutlined color="action" fontSize="small" />
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                    100% Secure & Encrypted Payments
                   </Typography>
                 </Stack>
               </Paper>
@@ -589,50 +397,27 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
         onClose={() => setOrderComplete(false)}
         maxWidth="xs"
         fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: 5, p: 3, textAlign: "center" } },
-        }}
+        PaperProps={{ sx: { borderRadius: 6, p: 4, textAlign: "center", boxShadow: '0 20px 60px rgba(0,0,0,0.1)' } }}
       >
         {orderDetails && (
           <Box>
-            <Avatar
-              sx={{
-                bgcolor: "success.main",
-                width: 72,
-                height: 72,
-                mx: "auto",
-                mb: 2,
-                boxShadow: "0 10px 25px rgba(46, 125, 50, 0.3)",
-              }}
-            >
-              <CheckCircleIcon sx={{ fontSize: 44, color: "#FFF" }} />
+            <Avatar sx={{ bgcolor: "success.main", width: 80, height: 80, mx: "auto", mb: 3 }}>
+              <CheckCircleIcon sx={{ fontSize: 50, color: "#FFF" }} />
             </Avatar>
-
-            <Typography variant="h5" fontWeight={800} gutterBottom>
-              Order Placed Successfully!
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, letterSpacing: -0.5 }}>
+              Order Confirmed!
             </Typography>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Order Reference ID: <strong>{orderDetails.orderId}</strong>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Reference ID: <strong style={{ color: '#000' }}>{orderDetails.orderId}</strong>
             </Typography>
-
-            <Alert severity="success" sx={{ textAlign: "left", mb: 3, borderRadius: 3 }}>
-              Fulfillment Type: <strong>{orderDetails.deliveryMethod === "delivery" ? "Home Delivery" : "Store Self-Pickup"}</strong>
-            </Alert>
-
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={() => {
-                setOrderComplete(false);
-                navigate("/orders");
-              }}
-              sx={{ borderRadius: 3, mb: 1.5, py: 1.3, fontWeight: 800, fontSize: "0.95rem" }}
-            >
-              View Order Status
-            </Button>
-            <Button variant="text" fullWidth onClick={() => navigate("/")} sx={{ fontWeight: 700 }}>
-              Back to Home
+            <Paper variant="outlined" sx={{ p: 2, mb: 4, borderRadius: 3, bgcolor: 'grey.50' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Fulfillment</Typography>
+              <Typography variant="body2" color="primary.main" sx={{ fontWeight: 800 }}>
+                {orderDetails.deliveryMethod === "delivery" ? "🚀 Fast Home Delivery" : "🏪 Store Self-Pickup"}
+              </Typography>
+            </Paper>
+            <Button variant="contained" fullWidth onClick={() => navigate("/")} sx={{ borderRadius: 3, py: 1.5, fontWeight: 800 }}>
+              Continue Shopping
             </Button>
           </Box>
         )}
@@ -640,4 +425,3 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
     </Box>
   );
 }
-

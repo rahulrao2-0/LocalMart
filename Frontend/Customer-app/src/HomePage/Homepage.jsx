@@ -440,12 +440,12 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
                 borderColor: "primary.light",
               }}
             >
-              <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <TrendingUpIcon color="primary" />
                 <Typography variant="subtitle1" fontWeight={800}>
                   Shops open near you
                 </Typography>
-              </Stack>
+              </Box>
               <Grid container spacing={2}>
                 {nearbyShops.map((shop) => (
                   <Grid size={6} key={shop.name}>
@@ -500,13 +500,13 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
                 boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.02)",
               }}
             >
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <MapOutlinedIcon color="primary" />
                   <Typography variant="subtitle1" fontWeight={800}>
                     Local Neighborhood Map
                   </Typography>
-                </Stack>
+                </Box>
                 {selectedShopOnMap && (
                   <Button
                     size="small"
@@ -518,7 +518,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
                     Clear route
                   </Button>
                 )}
-              </Stack>
+              </Box>
 
               {/* VECTOR neighborhood map */}
               <Box
