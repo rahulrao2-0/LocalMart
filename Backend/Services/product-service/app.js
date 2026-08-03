@@ -8,6 +8,8 @@ import { connectDB } from "./config/db.js";
 import { configureCloudinary } from "./config/cloudinary.js";
 import productRoutes from "./routes/product.routes.js";
 import { connectProducer } from "@localmart/shared";
+import products from "./config/demiData.js";
+import Product from "./models/product.js";
 
 const app = express();
 const port = process.env.PORT || 3003;
@@ -15,7 +17,7 @@ const port = process.env.PORT || 3003;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors()); // Allow internal requests from gateway
+// app.use(cors()); // Removed because API Gateway already handles CORS!
 
 app.use("/api/v1/products", productRoutes);
 
@@ -45,3 +47,9 @@ const startServer = async () => {
 };
 
 startServer();
+
+await Product.insertMany(products);
+
+console.log("?? Demi data inserted into the database.");
+
+

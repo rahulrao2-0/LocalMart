@@ -1,20 +1,97 @@
-import React from "react";
-import { Box, Typography, Button, Stack, useTheme } from "@mui/material";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Box, Typography, Button, Stack, useTheme, CircularProgress } from "@mui/material";
 import { ArrowForwardIos as ArrowForwardIosIcon } from "@mui/icons-material";
 import ProductCard from "./ProductCard";
+import { fetchProducts } from "../services/productApi";
 
 export default function CategorySection({
   title,
   subtitle,
-  products,
+  category,
+  searchQuery,
   onSeeAll,
   onAddToCart,
   onProductClick,
   mode = "delivery",
 }) {
   const theme = useTheme();
+  
+  const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef();
 
-  if (products.length === 0) return null;
+  // Reset when category or searchQuery changes
+  useEffect(() => {
+    setProducts([]);
+    setPage(1);
+    setHasMore(true);
+  }, [category, searchQuery]);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        const data = await fetchProducts(page, category, searchQuery);
+        if (!data || !data.data || data.data.length === 0) {
+          setHasMore(false);
+        } else {
+          const mappedProducts = data.data.map((backendProduct) => {
+            const shopName = backendProduct.brand || "Local Seller";
+            const price = backendProduct.price;
+            const isOpen = backendProduct.status !== "INACTIVE";
+            const distanceKm = Math.floor(Math.random() * 5) + 1;
+            
+            return {
+              id: backendProduct._id,
+              name: backendProduct.name,
+              category: backendProduct.category || "General",
+              rating: backendProduct.rating || 4.5,
+              supportsDelivery: true,
+              supportsPickup: true,
+              price: price,
+              nearestShop: shopName,
+              distanceKm: distanceKm,
+              isOpen: isOpen,
+              shopCount: 1,
+              shops: [{ shopName, price, distanceKm, isOpen, rating: 4.5 }],
+              images: backendProduct.images || [],
+            };
+          });
+
+          setProducts((prev) => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const newUnique = mappedProducts.filter(p => !existingIds.has(p.id));
+            return page === 1 ? mappedProducts : [...prev, ...newUnique];
+          });
+        }
+      } catch (err) {
+        setHasMore(false);
+      }
+      setLoading(false);
+    };
+    
+    if (hasMore) loadProducts();
+  }, [page, category, searchQuery]);
+
+  const lastElementRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
+
+  if (products.length === 0 && !loading) return null;
 
   return (
     <Box sx={{ mb: 6 }}>
@@ -120,6 +197,9 @@ export default function CategorySection({
               mode={mode}
             />
           ))}
+          <Box ref={lastElementRef} sx={{ minWidth: 20, display: "flex", justifyContent: "center", alignItems: "center" }}>
+            {loading && <CircularProgress size={24} />}
+          </Box>
         </Box>
       </Box>
     </Box>

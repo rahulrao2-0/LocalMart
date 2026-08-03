@@ -1,13 +1,31 @@
 import Product from "../models/Product.js";
 import { cloudinary } from "../config/cloudinary.js";
-import { publishEvent, TOPICS } from "@localmart/shared";
+import { publishEvent, TOPICS, redis } from "@localmart/shared";
 
 // @desc    Get all products (with pagination, filtering, search)
 // @route   GET /api/v1/products
 // @access  Public (or Seller for their own)
 export const getProducts = async (req, res) => {
   try {
-    const { keyword, category, status, sellerId, page = 1, limit = 10 } = req.query;
+    const { keyword, category, status, sellerId, page, limit } = req.query;
+
+    // Set defaults: page 1, limit 2 for testing
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 2;
+
+    // Create a dynamic cache key based on the query parameters
+    const cacheKey = `products:page:${pageNum}:limit:${limitNum}:cat:${category || 'all'}:kw:${keyword || 'none'}`;
+
+    // 1. Check Redis Cache
+    try {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        console.log(`Serving from Redis Cache: ${cacheKey}`);
+        return res.status(200).json(JSON.parse(cachedData));
+      }
+    } catch (err) {
+      console.log("Redis get error:", err);
+    }
 
     let query = {};
     if (keyword) query.name = { $regex: keyword, $options: "i" };
@@ -20,19 +38,29 @@ export const getProducts = async (req, res) => {
        query.status = { $ne: "DELETED" };
     }
 
-    const skip = (page - 1) * limit;
+    const skip = (pageNum - 1) * limitNum;
 
-    const products = await Product.find(query).skip(skip).limit(Number(limit)).sort({ createdAt: -1 });
+    console.log(`Serving from MongoDB: ${cacheKey}`);
+    const products = await Product.find(query).skip(skip).limit(limitNum).sort({ createdAt: -1 });
     const total = await Product.countDocuments(query);
 
-    return res.status(200).json({
+    const responseData = {
       success: true,
       count: products.length,
       total,
-      page: Number(page),
-      pages: Math.ceil(total / limit),
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
       data: products,
-    });
+    };
+
+    // 2. Save to Redis Cache (expire in 1 hour = 3600s)
+    try {
+      await redis.setEx(cacheKey, 3600, JSON.stringify(responseData));
+    } catch (err) {
+      console.log("Redis set error:", err);
+    }
+
+    return res.status(200).json(responseData);
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }

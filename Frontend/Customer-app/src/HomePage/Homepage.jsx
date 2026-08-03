@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchProducts } from "../services/productApi";
 import {
   Box,
   Container,
@@ -54,133 +55,133 @@ import SearchBar from "./SearchBar";
 import CategorySection from "./CategorySection";
 
 // Rich Mock Data Structure containing multiple shops for each product
-const allProducts = [
-  {
-    id: "v1",
-    name: "Onions 1kg",
-    category: "Vegetables",
-    rating: 4.6,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Shree Grocery Mart", price: 32, distanceKm: 0.6, isOpen: true, rating: 4.5 },
-      { shopName: "Om Sai Kirana", price: 28, distanceKm: 1.4, isOpen: true, rating: 4.3 },
-      { shopName: "Patel General Store", price: 24, distanceKm: 2.1, isOpen: false, rating: 4.1 },
-    ],
-  },
-  {
-    id: "v2",
-    name: "Tomatoes 1kg",
-    category: "Vegetables",
-    rating: 4.4,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Om Sai Kirana", price: 28, distanceKm: 1.4, isOpen: true, rating: 4.3 },
-      { shopName: "Shree Grocery Mart", price: 35, distanceKm: 0.6, isOpen: true, rating: 4.5 },
-      { shopName: "Patel General Store", price: 30, distanceKm: 2.1, isOpen: false, rating: 4.1 },
-    ],
-  },
-  {
-    id: "v3",
-    name: "Potatoes 1kg",
-    category: "Vegetables",
-    rating: 4.2,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Patel General Store", price: 24, distanceKm: 2.1, isOpen: false, rating: 4.1 },
-      { shopName: "Shree Grocery Mart", price: 28, distanceKm: 0.6, isOpen: true, rating: 4.5 },
-      { shopName: "Om Sai Kirana", price: 26, distanceKm: 1.4, isOpen: true, rating: 4.3 },
-    ],
-  },
-  {
-    id: "v4",
-    name: "Spinach Bunch",
-    category: "Vegetables",
-    rating: 4.8,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Shree Grocery Mart", price: 18, distanceKm: 0.6, isOpen: true, rating: 4.5 },
-      { shopName: "Om Sai Kirana", price: 20, distanceKm: 1.4, isOpen: true, rating: 4.3 },
-    ],
-  },
-  {
-    id: "f1",
-    name: "Study Table",
-    category: "Furniture",
-    rating: 4.7,
-    supportsDelivery: false,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Indore Furniture Hub", price: 3499, distanceKm: 3.2, isOpen: true, rating: 4.6 },
-      { shopName: "Modern Home Store", price: 3800, distanceKm: 4.8, isOpen: true, rating: 4.4 },
-    ],
-  },
-  {
-    id: "f2",
-    name: "Bookshelf 5-tier",
-    category: "Furniture",
-    rating: 4.5,
-    supportsDelivery: false,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Modern Home Store", price: 2199, distanceKm: 4.8, isOpen: true, rating: 4.4 },
-      { shopName: "Indore Furniture Hub", price: 2499, distanceKm: 3.2, isOpen: true, rating: 4.6 },
-    ],
-  },
-  {
-    id: "f3",
-    name: "Office Chair",
-    category: "Furniture",
-    rating: 4.3,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Indore Furniture Hub", price: 4999, distanceKm: 3.2, isOpen: true, rating: 4.6 },
-      { shopName: "Modern Home Store", price: 4500, distanceKm: 4.8, isOpen: false, rating: 4.4 },
-    ],
-  },
-  {
-    id: "e1",
-    name: "Wireless Mouse",
-    category: "Electronics",
-    rating: 4.6,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Tech Point", price: 599, distanceKm: 1.9, isOpen: true, rating: 4.7 },
-      { shopName: "Digital World", price: 649, distanceKm: 2.4, isOpen: true, rating: 4.5 },
-      { shopName: "Prime Electronics", price: 549, distanceKm: 3.5, isOpen: true, rating: 4.2 },
-    ],
-  },
-  {
-    id: "e2",
-    name: "Bluetooth Speaker",
-    category: "Electronics",
-    rating: 4.5,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Digital World", price: 1299, distanceKm: 2.4, isOpen: true, rating: 4.5 },
-      { shopName: "Prime Electronics", price: 1199, distanceKm: 3.5, isOpen: true, rating: 4.2 },
-      { shopName: "Tech Point", price: 1399, distanceKm: 1.9, isOpen: true, rating: 4.7 },
-    ],
-  },
-  {
-    id: "e3",
-    name: "Power Bank 10000mAh",
-    category: "Electronics",
-    rating: 4.4,
-    supportsDelivery: true,
-    supportsPickup: true,
-    shops: [
-      { shopName: "Tech Point", price: 899, distanceKm: 1.9, isOpen: true, rating: 4.7 },
-      { shopName: "Digital World", price: 999, distanceKm: 2.4, isOpen: true, rating: 4.5 },
-    ],
-  },
-];
+// const allProducts = [
+//   {
+//     id: "v1",
+//     name: "Onions 1kg",
+//     category: "Vegetables",
+//     rating: 4.6,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Shree Grocery Mart", price: 32, distanceKm: 0.6, isOpen: true, rating: 4.5 },
+//       { shopName: "Om Sai Kirana", price: 28, distanceKm: 1.4, isOpen: true, rating: 4.3 },
+//       { shopName: "Patel General Store", price: 24, distanceKm: 2.1, isOpen: false, rating: 4.1 },
+//     ],
+//   },
+//   {
+//     id: "v2",
+//     name: "Tomatoes 1kg",
+//     category: "Vegetables",
+//     rating: 4.4,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Om Sai Kirana", price: 28, distanceKm: 1.4, isOpen: true, rating: 4.3 },
+//       { shopName: "Shree Grocery Mart", price: 35, distanceKm: 0.6, isOpen: true, rating: 4.5 },
+//       { shopName: "Patel General Store", price: 30, distanceKm: 2.1, isOpen: false, rating: 4.1 },
+//     ],
+//   },
+//   {
+//     id: "v3",
+//     name: "Potatoes 1kg",
+//     category: "Vegetables",
+//     rating: 4.2,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Patel General Store", price: 24, distanceKm: 2.1, isOpen: false, rating: 4.1 },
+//       { shopName: "Shree Grocery Mart", price: 28, distanceKm: 0.6, isOpen: true, rating: 4.5 },
+//       { shopName: "Om Sai Kirana", price: 26, distanceKm: 1.4, isOpen: true, rating: 4.3 },
+//     ],
+//   },
+//   {
+//     id: "v4",
+//     name: "Spinach Bunch",
+//     category: "Vegetables",
+//     rating: 4.8,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Shree Grocery Mart", price: 18, distanceKm: 0.6, isOpen: true, rating: 4.5 },
+//       { shopName: "Om Sai Kirana", price: 20, distanceKm: 1.4, isOpen: true, rating: 4.3 },
+//     ],
+//   },
+//   {
+//     id: "f1",
+//     name: "Study Table",
+//     category: "Furniture",
+//     rating: 4.7,
+//     supportsDelivery: false,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Indore Furniture Hub", price: 3499, distanceKm: 3.2, isOpen: true, rating: 4.6 },
+//       { shopName: "Modern Home Store", price: 3800, distanceKm: 4.8, isOpen: true, rating: 4.4 },
+//     ],
+//   },
+//   {
+//     id: "f2",
+//     name: "Bookshelf 5-tier",
+//     category: "Furniture",
+//     rating: 4.5,
+//     supportsDelivery: false,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Modern Home Store", price: 2199, distanceKm: 4.8, isOpen: true, rating: 4.4 },
+//       { shopName: "Indore Furniture Hub", price: 2499, distanceKm: 3.2, isOpen: true, rating: 4.6 },
+//     ],
+//   },
+//   {
+//     id: "f3",
+//     name: "Office Chair",
+//     category: "Furniture",
+//     rating: 4.3,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Indore Furniture Hub", price: 4999, distanceKm: 3.2, isOpen: true, rating: 4.6 },
+//       { shopName: "Modern Home Store", price: 4500, distanceKm: 4.8, isOpen: false, rating: 4.4 },
+//     ],
+//   },
+//   {
+//     id: "e1",
+//     name: "Wireless Mouse",
+//     category: "Electronics",
+//     rating: 4.6,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Tech Point", price: 599, distanceKm: 1.9, isOpen: true, rating: 4.7 },
+//       { shopName: "Digital World", price: 649, distanceKm: 2.4, isOpen: true, rating: 4.5 },
+//       { shopName: "Prime Electronics", price: 549, distanceKm: 3.5, isOpen: true, rating: 4.2 },
+//     ],
+//   },
+//   {
+//     id: "e2",
+//     name: "Bluetooth Speaker",
+//     category: "Electronics",
+//     rating: 4.5,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Digital World", price: 1299, distanceKm: 2.4, isOpen: true, rating: 4.5 },
+//       { shopName: "Prime Electronics", price: 1199, distanceKm: 3.5, isOpen: true, rating: 4.2 },
+//       { shopName: "Tech Point", price: 1399, distanceKm: 1.9, isOpen: true, rating: 4.7 },
+//     ],
+//   },
+//   {
+//     id: "e3",
+//     name: "Power Bank 10000mAh",
+//     category: "Electronics",
+//     rating: 4.4,
+//     supportsDelivery: true,
+//     supportsPickup: true,
+//     shops: [
+//       { shopName: "Tech Point", price: 899, distanceKm: 1.9, isOpen: true, rating: 4.7 },
+//       { shopName: "Digital World", price: 999, distanceKm: 2.4, isOpen: true, rating: 4.5 },
+//     ],
+//   },
+// ];
 
 const nearbyShops = [
   { name: "Shree Grocery Mart", distanceKm: 0.6, isOpen: true, rating: 4.5, x: 120, y: 150 },
@@ -199,6 +200,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
   const [location, setLocation] = useState("Vijay Nagar, Indore");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [allProducts, setAllProducts] = useState([]); 
 
   // Shop comparison details dialog
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -215,42 +217,7 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
   const [checkoutDetails, setCheckoutDetails] = useState(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  // Transform raw mock data for rendering based on current shop states
-  const processedProducts = useMemo(() => {
-    return allProducts.map((p) => {
-      // Find the best shop entry (lowest price among open shops, or cheapest shop overall if all closed)
-      const openShops = p.shops.filter((s) => s.isOpen);
-      const activeShops = openShops.length > 0 ? openShops : p.shops;
-      const cheapestShopObj = activeShops.reduce((cheapest, current) => {
-        return current.price < cheapest.price ? current : cheapest;
-      }, activeShops[0]);
-
-      return {
-        ...p,
-        price: cheapestShopObj.price,
-        nearestShop: cheapestShopObj.shopName,
-        distanceKm: cheapestShopObj.distanceKm,
-        isOpen: cheapestShopObj.isOpen,
-        shopCount: p.shops.length,
-      };
-    });
-  }, []);
-
-  // Filter products based on category and search query
-  const filteredProducts = useMemo(() => {
-    return processedProducts.filter((product) => {
-      const matchCategory = selectedCategory === "All" || product.category === selectedCategory;
-      const matchQuery =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCategory && matchQuery;
-    });
-  }, [processedProducts, selectedCategory, searchQuery]);
-
-  // Group products by category for horizontal display
-  const vegetableProducts = filteredProducts.filter((p) => p.category === "Vegetables");
-  const furnitureProducts = filteredProducts.filter((p) => p.category === "Furniture");
-  const electronicsProducts = filteredProducts.filter((p) => p.category === "Electronics");
+  // Homepage no longer fetches products! Each CategorySection handles its own horizontal fetching.
 
   // Cart operations
   const handleAddToCart = (product, selectedMode = mode, specificShop = null) => {
@@ -689,57 +656,63 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
             </Box>
 
             {/* SECTIONS */}
-            {searchQuery && filteredProducts.length === 0 ? (
-              <Paper sx={{ p: 5, textAlign: "center", borderRadius: 4 }}>
-                <Typography variant="h6" fontWeight={700} color="text.secondary">
-                  No products found matching "{searchQuery}"
-                </Typography>
-                <Button variant="outlined" color="primary" sx={{ mt: 2 }} onClick={() => setSearchQuery("")}>
-                  Clear Search
-                </Button>
-              </Paper>
-            ) : (
-              <>
-                {/* FRESH VEGETABLES ROW */}
-                {(selectedCategory === "All" || selectedCategory === "Vegetables") && (
-                  <CategorySection
-                    title="🥬 Fresh Vegetables"
-                    subtitle="Direct from nearby farms & local grocery stores"
-                    products={vegetableProducts}
-                    onAddToCart={handleAddToCart}
-                    onProductClick={(p) => navigate(`/product/${p.id}`)}
-                    mode={mode}
-                    onSeeAll={() => setSelectedCategory("Vegetables")}
-                  />
-                )}
+            <>
+              {/* FRESH VEGETABLES ROW */}
+              {(selectedCategory === "All" || selectedCategory === "Vegetables") && (
+                <CategorySection
+                  title="🥬 Fresh Vegetables"
+                  subtitle="Direct from nearby farms & local grocery stores"
+                  category="Vegetables"
+                  searchQuery={searchQuery}
+                  onAddToCart={handleAddToCart}
+                  onProductClick={(p) => navigate(`/product/${p.id}`)}
+                  mode={mode}
+                  onSeeAll={() => setSelectedCategory("Vegetables")}
+                />
+              )}
 
-                {/* FURNITURE ROW */}
-                {(selectedCategory === "All" || selectedCategory === "Furniture") && (
-                  <CategorySection
-                    title="🛋️ Premium Furniture"
-                    subtitle="Handcrafted tables, chairs, and bookshelves from local workshops"
-                    products={furnitureProducts}
-                    onAddToCart={handleAddToCart}
-                    onProductClick={(p) => navigate(`/product/${p.id}`)}
-                    mode={mode}
-                    onSeeAll={() => setSelectedCategory("Furniture")}
-                  />
-                )}
+              {/* FURNITURE ROW */}
+              {(selectedCategory === "All" || selectedCategory === "Furniture") && (
+                <CategorySection
+                  title="🛋️ Premium Furniture"
+                  subtitle="Handcrafted tables, chairs, and bookshelves from local workshops"
+                  category="Furniture"
+                  searchQuery={searchQuery}
+                  onAddToCart={handleAddToCart}
+                  onProductClick={(p) => navigate(`/product/${p.id}`)}
+                  mode={mode}
+                  onSeeAll={() => setSelectedCategory("Furniture")}
+                />
+              )}
 
-                {/* ELECTRONICS ROW */}
-                {(selectedCategory === "All" || selectedCategory === "Electronics") && (
-                  <CategorySection
-                    title="🔌 Tech & Electronics"
-                    subtitle="Compare specs & prices at tech stores near you"
-                    products={electronicsProducts}
-                    onAddToCart={handleAddToCart}
-                    onProductClick={(p) => navigate(`/product/${p.id}`)}
-                    mode={mode}
-                    onSeeAll={() => setSelectedCategory("Electronics")}
-                  />
-                )}
-              </>
-            )}
+              {/* ELECTRONICS ROW */}
+              {(selectedCategory === "All" || selectedCategory === "Electronics") && (
+                <CategorySection
+                  title="🔌 Tech & Electronics"
+                  subtitle="Compare specs & prices at tech stores near you"
+                  category="Electronics"
+                  searchQuery={searchQuery}
+                  onAddToCart={handleAddToCart}
+                  onProductClick={(p) => navigate(`/product/${p.id}`)}
+                  mode={mode}
+                  onSeeAll={() => setSelectedCategory("Electronics")}
+                />
+              )}
+
+              {/* OTHER PRODUCTS ROW */}
+              {(selectedCategory === "All" || (!["Vegetables", "Furniture", "Electronics"].includes(selectedCategory))) && (
+                <CategorySection
+                  title="📦 Other Products"
+                  subtitle="Discover more items from local sellers"
+                  category="General"
+                  searchQuery={searchQuery}
+                  onAddToCart={handleAddToCart}
+                  onProductClick={(p) => navigate(`/product/${p.id}`)}
+                  mode={mode}
+                  onSeeAll={() => {}}
+                />
+              )}
+            </>
           </Grid>
         </Grid>
       </Container>
