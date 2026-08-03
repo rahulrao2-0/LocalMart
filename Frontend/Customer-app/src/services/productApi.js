@@ -26,3 +26,25 @@ export const fetchProducts = async (page = 1, category = "", keyword = "") => {
     throw error;
   }
 };
+
+export const fetchProductById = async (productId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error in fetchProductById:", error);
+    throw error;
+  }
+};

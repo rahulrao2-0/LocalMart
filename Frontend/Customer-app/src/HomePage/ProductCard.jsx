@@ -169,16 +169,26 @@ export default function ProductCard({ product, onAddToCart, onClick, mode = "del
           className="product-image"
           sx={{
             height: "100%",
-            background: currentGradient,
+            background: product.images && product.images.length > 0 ? "none" : currentGradient,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 48,
             transition: "transform 0.4s ease",
             userSelect: "none",
+            backgroundColor: theme.palette.background.paper,
           }}
         >
-          {emojiSymbol}
+          {product.images && product.images.length > 0 ? (
+            <Box 
+              component="img" 
+              src={product.images[0].url} 
+              alt={name} 
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            />
+          ) : (
+            emojiSymbol
+          )}
         </CardMedia>
       </Box>
 

@@ -12,7 +12,7 @@ const products = [
     stockAvailable: 150,
     images: [
       {
-        url: "https://example.com/images/tomato.jpg",
+        url: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80",
         public_id: "products/tomato",
       },
     ],
@@ -31,7 +31,7 @@ const products = [
     stockAvailable: 200,
     images: [
       {
-        url: "https://example.com/images/potato.jpg",
+        url: "https://images.unsplash.com/photo-1518977676601-b144525f1901?w=800&q=80",
         public_id: "products/potato",
       },
     ],
@@ -50,7 +50,7 @@ const products = [
     stockAvailable: 120,
     images: [
       {
-        url: "https://example.com/images/carrot.jpg",
+        url: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=800&q=80",
         public_id: "products/carrot",
       },
     ],
@@ -73,7 +73,7 @@ const products = [
     stockAvailable: 15,
     images: [
       {
-        url: "https://example.com/images/dining-table.jpg",
+        url: "https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800&q=80",
         public_id: "products/dining-table",
       },
     ],
@@ -92,7 +92,7 @@ const products = [
     stockAvailable: 35,
     images: [
       {
-        url: "https://example.com/images/office-chair.jpg",
+        url: "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=800&q=80",
         public_id: "products/office-chair",
       },
     ],
@@ -111,7 +111,7 @@ const products = [
     stockAvailable: 8,
     images: [
       {
-        url: "https://example.com/images/queen-bed.jpg",
+        url: "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=800&q=80",
         public_id: "products/queen-bed",
       },
     ],
@@ -134,7 +134,7 @@ const products = [
     stockAvailable: 20,
     images: [
       {
-        url: "https://example.com/images/iphone16.jpg",
+        url: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&q=80",
         public_id: "products/iphone16",
       },
     ],
@@ -153,7 +153,7 @@ const products = [
     stockAvailable: 12,
     images: [
       {
-        url: "https://example.com/images/samsung-tv.jpg",
+        url: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=800&q=80",
         public_id: "products/samsung-tv",
       },
     ],
@@ -172,7 +172,7 @@ const products = [
     stockAvailable: 18,
     images: [
       {
-        url: "https://example.com/images/dell-inspiron.jpg",
+        url: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=800&q=80",
         public_id: "products/dell-inspiron",
       },
     ],
