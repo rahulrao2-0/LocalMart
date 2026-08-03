@@ -15,8 +15,7 @@ import { publishEvent, TOPICS } from "@localmart/shared";
 
 export const signup = async (req, res) => {
   const connection = await pool.getConnection();
-//   console.log("Signup Request Body:", req.body);
-console.log("Signup api hit");
+  console.log("Signup api hit");
 
   try {
     const { full_name, email, password, role = "CUSTOMER" } = req.body;
@@ -29,7 +28,7 @@ console.log("Signup api hit");
       });
     }
 
-    if (!["CUSTOMER", "SELLER"].includes(role)) {
+    if (!["CUSTOMER", "SELLER", "DELIVERY"].includes(role)) {
       return res.status(400).json({
         success: false,
         message: "Invalid role specified.",
@@ -40,105 +39,130 @@ console.log("Signup api hit");
 
     // Check if user already exists
     const [existingUser] = await connection.execute(
-      "SELECT id FROM users WHERE email = ?",
+      "SELECT id, password_hash, is_email_verified FROM users WHERE email = ?",
       [email]
     );
 
-    if (existingUser.length > 0) {
-      await connection.rollback();
-
-      return res.status(409).json({
-        success: false,
-        message: "User already exists.",
-      });
-    }
+    let userId;
+    let isExisting = false;
+    let isEmailVerified = false;
 
     // Get Role id
-    const [roles] = await connection.execute(
+    const [rolesList] = await connection.execute(
       "SELECT id FROM roles WHERE name = ?",
       [role]
     );
 
-    if (roles.length === 0) {
+    if (rolesList.length === 0) {
       await connection.rollback();
-
       return res.status(500).json({
         success: false,
         message: `${role} role not found in database.`,
       });
     }
 
-    const assignedRoleId = roles[0].id;
+    const assignedRoleId = rolesList[0].id;
 
-    // Hash Password
-    const passwordHash = await bcrypt.hash(password, 10);
+    if (existingUser.length > 0) {
+      userId = existingUser[0].id;
+      isEmailVerified = existingUser[0].is_email_verified;
+      isExisting = true;
 
-    // Generate UUID
-    const userId = uuidv4();
+      // Verify Password since they are modifying an existing account
+      const isPasswordValid = await bcrypt.compare(password, existingUser[0].password_hash);
+      if (!isPasswordValid) {
+        await connection.rollback();
+        return res.status(401).json({
+          success: false,
+          message: "User exists but password is incorrect.",
+        });
+      }
 
-    // Insert User
-    await connection.execute(
-      `INSERT INTO users
-      (id, full_name, email, password_hash)
-      VALUES (?, ?, ?, ?)`,
-      [userId, full_name, email, passwordHash]
-    );
+      // Check if user already has this role
+      const [existingRoles] = await connection.execute(
+        "SELECT role_id FROM user_roles WHERE user_id = ? AND role_id = ?",
+        [userId, assignedRoleId]
+      );
 
-    // Assign Role
-    await connection.execute(
-      `INSERT INTO user_roles
-      (user_id, role_id)
-      VALUES (?, ?)`,
-      [userId, assignedRoleId]
-    );
+      if (existingRoles.length === 0) {
+        // Assign Role
+        await connection.execute(
+          `INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)`,
+          [userId, assignedRoleId]
+        );
+      }
+    } else {
+      // Create new user
+      userId = uuidv4();
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      await connection.execute(
+        `INSERT INTO users (id, full_name, email, password_hash) VALUES (?, ?, ?, ?)`,
+        [userId, full_name, email, passwordHash]
+      );
+
+      await connection.execute(
+        `INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)`,
+        [userId, assignedRoleId]
+      );
+    }
 
     await connection.commit();
 
-    console.log("User registered successfully:", { id: userId, full_name, email });
+    console.log("User registered/updated successfully:", { id: userId, full_name, email });
 
-    const otp = generateOtp();
-    console.log(`Generated OTP for user ${userId}:`, otp);
-    await storeOTP(email, otp);
-     
-    await sendEmail({
-      to: email,
-      subject: "Email Verification OTP",
-      html: `
-         <!DOCTYPE html>
-         <html lang="en">
-         <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-         <body style="margin:0; padding:0; background-color:#f4f5f7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7; padding:32px 16px;">
-        <tr><td align="center">
-         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-         <tr><td style="background-color:#16a34a; padding:28px 32px; text-align:center;">
-          <span style="color:#ffffff; font-size:22px; font-weight:700;">🛒 LocalMart</span>
-        </td></tr>
-        <tr><td style="padding:40px 32px 24px 32px;">
-          <p style="margin:0 0 8px 0; color:#111827; font-size:20px; font-weight:600;">Verify your email</p>
-          <p style="margin:0 0 28px 0; color:#6b7280; font-size:15px; line-height:1.6;">Use the code below to complete your email verification. This code will expire in 10 minutes.</p>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr><td align="center" style="background-color:#f0fdf4; border:1px dashed #16a34a; border-radius:12px; padding:22px 20px;">
-              <span style="font-size:34px; font-weight:700; letter-spacing:10px; color:#15803d; font-family:'Courier New', monospace;">${otp}</span>
-            </td></tr>
-          </table>
-        </td></tr>
-        <tr><td style="padding:24px 32px 32px 32px; text-align:center; border-top:1px solid #e5e7eb;">
-          <p style="margin:0; color:#9ca3af; font-size:12px;">&copy; ${new Date().getFullYear()} LocalMart. All rights reserved.</p>
-        </td></tr>
+    // Fetch all roles for the JWT payload
+    const [allUserRoles] = await connection.execute(
+      `SELECT r.name FROM roles r JOIN user_roles ur ON r.id = ur.role_id WHERE ur.user_id = ?`,
+      [userId]
+    );
+    const assignedRolesArray = allUserRoles.map(r => r.name);
+
+    if (!isExisting || !isEmailVerified) {
+      const otp = generateOtp();
+      console.log(`Generated OTP for user ${userId}:`, otp);
+      await storeOTP(email, otp);
+       
+      await sendEmail({
+        to: email,
+        subject: "Email Verification OTP",
+        html: `
+           <!DOCTYPE html>
+           <html lang="en">
+           <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+           <body style="margin:0; padding:0; background-color:#f4f5f7; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7; padding:32px 16px;">
+          <tr><td align="center">
+           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+           <tr><td style="background-color:#16a34a; padding:28px 32px; text-align:center;">
+            <span style="color:#ffffff; font-size:22px; font-weight:700;">🛒 LocalMart</span>
+          </td></tr>
+          <tr><td style="padding:40px 32px 24px 32px;">
+            <p style="margin:0 0 8px 0; color:#111827; font-size:20px; font-weight:600;">Verify your email</p>
+            <p style="margin:0 0 28px 0; color:#6b7280; font-size:15px; line-height:1.6;">Use the code below to complete your email verification. This code will expire in 10 minutes.</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td align="center" style="background-color:#f0fdf4; border:1px dashed #16a34a; border-radius:12px; padding:22px 20px;">
+                <span style="font-size:34px; font-weight:700; letter-spacing:10px; color:#15803d; font-family:'Courier New', monospace;">${otp}</span>
+              </td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="padding:24px 32px 32px 32px; text-align:center; border-top:1px solid #e5e7eb;">
+            <p style="margin:0; color:#9ca3af; font-size:12px;">&copy; ${new Date().getFullYear()} LocalMart. All rights reserved.</p>
+          </td></tr>
+        </table>
+      </td></tr>
       </table>
-    </td></tr>
-    </table>
-  </body>
-  </html>`,
-    });
-
-    console.log(`OTP for user ${email} stored in Redis:`, otp);
+    </body>
+    </html>`,
+      });
+  
+      console.log(`OTP for user ${email} stored in Redis:`, otp);
+    }
 
     const payload = {
       userId: userId,
       email: email,
-      roles: [role],
+      roles: assignedRolesArray,
     };
 
     const accessToken = createAccessToken(payload);
@@ -158,12 +182,12 @@ console.log("Signup api hit");
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully.",
+      message: isExisting ? "Role added successfully." : "User registered successfully.",
       user: {
         id: userId,
         full_name,
         email,
-        roles: [role],
+        roles: assignedRolesArray,
       },
     });
 

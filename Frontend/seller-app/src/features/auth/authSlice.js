@@ -4,9 +4,17 @@ import { apiFetch } from '../../services/api';
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue, dispatch }) => {
     try {
       const data = await loginApi(credentials);
+      
+      // Enforce SELLER role authorization
+      if (!data.user.roles || !data.user.roles.includes('SELLER')) {
+        // If they are not a seller, we immediately log them out to clear the cookie
+        await dispatch(logout());
+        return rejectWithValue("Access Denied: You do not have a registered Seller Account.");
+      }
+
       // The backend sets the token cookies automatically. We just cache the user object.
       localStorage.setItem('seller_user', JSON.stringify(data.user));
       return data;
