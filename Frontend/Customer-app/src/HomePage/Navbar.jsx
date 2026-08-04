@@ -47,6 +47,7 @@ import {
   Menu as MenuIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
+import NotificationBell from "../components/NotificationBell";
 
 export default function Navbar({
   location = "Vijay Nagar, Indore",
@@ -391,6 +392,8 @@ export default function Navbar({
                 </Button>
               </Box>
             )}
+
+            {user && <NotificationBell />}
 
             {/* CART BUTTON (Navigates to Dedicated /cart page) */}
             <Tooltip title="View Cart">

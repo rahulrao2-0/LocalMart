@@ -6,9 +6,9 @@ import { useTheme } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import NotificationsIcon from '@mui/icons-material/NotificationsNone';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../features/auth/authSlice';
+import NotificationBell from '../NotificationBell';
 import { useNavigate } from 'react-router-dom';
 
 const Topbar = ({ handleDrawerToggle, drawerWidth, themeMode, toggleTheme }) => {
@@ -73,9 +73,8 @@ const Topbar = ({ handleDrawerToggle, drawerWidth, themeMode, toggleTheme }) => 
           <IconButton onClick={toggleTheme} color="inherit">
             {themeMode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
           </IconButton>
-          <IconButton color="inherit">
-            <NotificationsIcon />
-          </IconButton>
+          
+          <NotificationBell />
           
           
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, gap: 1 }}>
