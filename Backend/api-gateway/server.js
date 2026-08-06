@@ -77,6 +77,15 @@ app.use(
   })
 );
 
+// Proxy for cart API endpoints (/api/v1/cart)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/cart",
+    target: "http://localhost:3006",
+    changeOrigin: true,
+  })
+);
+
 app.listen(3000, () => {
   console.log("API Gateway running on port 3000");
 });
