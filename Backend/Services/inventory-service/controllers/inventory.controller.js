@@ -1,4 +1,4 @@
-const inventoryService = require('../services/inventory.service');
+import inventoryService from '../services/inventory.service.js';
 
 class InventoryController {
     async getInventory(req, res) {
@@ -32,4 +32,4 @@ class InventoryController {
     }
 }
 
-module.exports = new InventoryController();
+export default new InventoryController();

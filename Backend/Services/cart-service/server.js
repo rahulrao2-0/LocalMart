@@ -1,8 +1,9 @@
-require('dotenv').config();
-const app = require('./app');
-const connectDB = require('./config/db');
-const { connectProducer, redis } = require('@localmart/shared');
-const { runConsumer } = require('./kafka/consumer');
+import dotenv from 'dotenv';
+dotenv.config();
+import app from './app.js';
+import connectDB from './config/db.js';
+import { connectProducer, redis } from '@localmart/shared';
+import { runConsumer } from './kafka/consumer.js';
 
 const startServer = async () => {
     try {

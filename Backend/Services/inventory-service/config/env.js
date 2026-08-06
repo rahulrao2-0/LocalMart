@@ -1,4 +1,5 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
 const env = {
     PORT: process.env.PORT || 3003,
@@ -8,4 +9,4 @@ const env = {
     KAFKA_CLIENT_ID: 'inventory-service',
 };
 
-module.exports = { env };
+export { env };

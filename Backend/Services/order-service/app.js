@@ -5,8 +5,6 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import orderRoutes from "./routes/order.routes.js";
-import { connectProducer } from "@localmart/shared";
-
 const app = express();
 const port = process.env.PORT || 3004;
 
@@ -25,11 +23,19 @@ app.use((err, req, res, next) => {
   });
 });
 
+import { connectProducer, initTopics, TOPICS } from "@localmart/shared";
 import { connectPaymentConsumer } from "./events/paymentConsumer.js";
 
 const startServer = async () => {
   await connectDB();
   
+  try {
+    await initTopics(Object.values(TOPICS));
+    console.log("✅ Kafka Topics Initialized");
+  } catch (err) {
+    console.error("⚠️ Failed to init topics:", err.message);
+  }
+
   try {
     await connectProducer();
     console.log("🚀 Kafka Producer Connected");

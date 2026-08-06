@@ -1,4 +1,4 @@
-const Cart = require('../models/Cart');
+import Cart from '../models/Cart.js';
 
 class CartRepository {
     async findCartByCustomerId(customerId) {
@@ -46,4 +46,4 @@ class CartRepository {
     }
 }
 
-module.exports = new CartRepository();
+export default new CartRepository();

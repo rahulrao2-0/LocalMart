@@ -1,5 +1,5 @@
-const inventoryService = require('../services/inventory.service');
-const { createConsumer, TOPICS } = require('@localmart/shared');
+import inventoryService from '../services/inventory.service.js';
+import { createConsumer, TOPICS } from '@localmart/shared';
 
 const startKafkaConsumer = async () => {
     try {
@@ -58,4 +58,4 @@ const startKafkaConsumer = async () => {
     }
 };
 
-module.exports = { startKafkaConsumer };
+export { startKafkaConsumer };

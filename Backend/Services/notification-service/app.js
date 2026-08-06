@@ -19,8 +19,21 @@ connectDB();
 // Initialize Socket.io
 initSocket(httpServer);
 
-// Initialize Kafka Consumer
-startConsumer();
+import { initTopics, TOPICS } from "@localmart/shared";
+
+const startServer = async () => {
+    try {
+        await initTopics(Object.values(TOPICS));
+        console.log("✅ Kafka Topics Initialized");
+    } catch (err) {
+        console.error("⚠️ Failed to init topics:", err.message);
+    }
+    
+    // Initialize Kafka Consumer
+    startConsumer();
+};
+
+startServer();
 
 app.use(cors());
 app.use(express.json());

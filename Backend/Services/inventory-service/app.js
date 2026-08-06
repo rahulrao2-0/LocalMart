@@ -1,10 +1,10 @@
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const inventoryRoutes = require('./routes/inventory.routes');
-const errorHandler = require('./middlewares/error.middleware');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import inventoryRoutes from './routes/inventory.routes.js';
+import errorHandler from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -17,4 +17,4 @@ app.use('/inventory', inventoryRoutes);
 
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

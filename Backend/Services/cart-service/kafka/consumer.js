@@ -1,5 +1,5 @@
-const { createConsumer, TOPICS } = require('@localmart/shared');
-const cartRepository = require('../repositories/cartRepository');
+import { createConsumer, TOPICS } from '@localmart/shared';
+import cartRepository from '../repositories/cartRepository.js';
 
 const runConsumer = async () => {
     const consumer = await createConsumer('cart-service-group');
@@ -21,4 +21,4 @@ const runConsumer = async () => {
     });
 };
 
-module.exports = { runConsumer };
+export {  runConsumer  };

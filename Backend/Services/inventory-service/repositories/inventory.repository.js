@@ -1,4 +1,4 @@
-const Inventory = require('../models/inventory.model');
+import Inventory from '../models/inventory.model.js';
 
 class InventoryRepository {
     async findByProductId(productId) {
@@ -15,4 +15,4 @@ class InventoryRepository {
     }
 }
 
-module.exports = new InventoryRepository();
+export default new InventoryRepository();

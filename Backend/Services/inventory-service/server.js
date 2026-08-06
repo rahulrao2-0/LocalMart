@@ -1,8 +1,8 @@
-const app = require('./app');
-const { env } = require('./config/env');
-const { connectDB } = require('./config/db');
-const { startKafkaConsumer } = require('./kafka/consumerHandler');
-const { connectProducer } = require('@localmart/shared');
+import app from './app.js';
+import { env } from './config/env.js';
+import { connectDB } from './config/db.js';
+import { startKafkaConsumer } from './kafka/consumerHandler.js';
+import { connectProducer } from '@localmart/shared';
 
 const startServer = async () => {
     try {

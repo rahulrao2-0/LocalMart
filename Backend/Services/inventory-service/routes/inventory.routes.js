@@ -1,5 +1,5 @@
-const express = require('express');
-const inventoryController = require('../controllers/inventory.controller');
+import express from 'express';
+import inventoryController from '../controllers/inventory.controller.js';
 const router = express.Router();
 
 router.get('/:productId', inventoryController.getInventory.bind(inventoryController));
@@ -8,4 +8,4 @@ router.put('/decrease', inventoryController.decreaseStock.bind(inventoryControll
 router.put('/reserve', inventoryController.reserveStock.bind(inventoryController));
 router.put('/release', inventoryController.releaseStock.bind(inventoryController));
 
-module.exports = router;
+export default router;

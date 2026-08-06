@@ -1,6 +1,6 @@
-const cartRepository = require('../repositories/cartRepository');
-const axios = require('axios');
-const { publishEvent, TOPICS } = require('@localmart/shared');
+import cartRepository from '../repositories/cartRepository.js';
+import axios from 'axios';
+import { publishEvent, TOPICS } from '@localmart/shared';
 
 class CartService {
     async getCart(customerId) {
@@ -116,4 +116,4 @@ class CartService {
     }
 }
 
-module.exports = new CartService();
+export default new CartService();

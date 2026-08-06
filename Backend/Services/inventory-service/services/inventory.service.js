@@ -1,5 +1,5 @@
-const inventoryRepository = require('../repositories/inventory.repository');
-const { redis, publishEvent, TOPICS } = require('@localmart/shared');
+import inventoryRepository from '../repositories/inventory.repository.js';
+import { redis, publishEvent, TOPICS } from '@localmart/shared';
 
 class InventoryService {
     async getInventory(productId) {
@@ -76,4 +76,4 @@ class InventoryService {
     }
 }
 
-module.exports = new InventoryService();
+export default new InventoryService();
