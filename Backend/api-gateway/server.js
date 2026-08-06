@@ -50,9 +50,23 @@ app.use(
   })
 );
 
+// Proxy for order API endpoints (/api/v1/orders)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/orders",
+    target: "http://localhost:3004",
+    changeOrigin: true,
+  })
+);
 
-
-
+// Proxy for payment API endpoints (/api/v1/payments)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/payments",
+    target: "http://localhost:3005",
+    changeOrigin: true,
+  })
+);
 
 app.listen(3000, () => {
   console.log("API Gateway running on port 3000");

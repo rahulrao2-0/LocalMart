@@ -1,0 +1,20 @@
+{
+  "name": "payment-service",
+  "version": "1.0.0",
+  "description": "Payment Service for LocalMart",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "@localmart/shared": "file:../../shared",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.9.0",
+    "razorpay": "^2.9.4"
+  }
+}
