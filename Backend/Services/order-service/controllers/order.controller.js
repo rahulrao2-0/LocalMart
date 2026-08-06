@@ -9,6 +9,7 @@ const addTimelineEvent = (order, status, message) => {
 
 // Create a new order
 export const createOrder = async (req, res, next) => {
+  console.log("📥 [ORDER SERVICE] createOrder API Hit!");
   try {
     const {
       items,
@@ -23,11 +24,16 @@ export const createOrder = async (req, res, next) => {
     } = req.body;
     const customerId = req.user?.id || req.body.customerId;
 
+    console.log("🔍 [ORDER SERVICE] Incoming request body:", JSON.stringify(req.body, null, 2));
+    console.log("🔍 [ORDER SERVICE] Resolved Customer ID:", customerId);
+
     if (!items || items.length === 0) {
+      console.warn("⚠️ [ORDER SERVICE] No items provided in order request.");
       return res.status(400).json({ success: false, message: "No order items provided" });
     }
 
     const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    console.log(`📦 [ORDER SERVICE] Generating order number: ${orderNumber}`);
 
     const order = new Order({
       orderNumber,
@@ -49,11 +55,13 @@ export const createOrder = async (req, res, next) => {
     });
 
     const createdOrder = await order.save();
+    console.log(`✅ [ORDER SERVICE] Order successfully saved in MongoDB with ID: ${createdOrder._id}`);
 
     let paymentData = null;
 
     if (paymentMethod === "RAZORPAY") {
       // Synchronous REST call to Payment Service
+      console.log(`💳 [ORDER SERVICE] Initiating Razorpay order creation for orderId: ${createdOrder._id}`);
       try {
         const paymentRes = await fetch("http://localhost:3005/api/v1/payments/create-order", {
           method: "POST",
@@ -68,16 +76,19 @@ export const createOrder = async (req, res, next) => {
         });
 
         const paymentResData = await paymentRes.json();
+        console.log("💳 [ORDER SERVICE] Razorpay API Response:", JSON.stringify(paymentResData, null, 2));
         
         if (paymentResData.success) {
           createdOrder.razorpayOrderId = paymentResData.razorpayOrderId;
           await createdOrder.save();
+          console.log(`✅ [ORDER SERVICE] Linked Razorpay Order ID ${paymentResData.razorpayOrderId} to order.`);
           paymentData = paymentResData;
         } else {
+          console.error("❌ [ORDER SERVICE] Payment initialization failed inside Payment Service.");
           return res.status(500).json({ success: false, message: "Payment initialization failed", data: createdOrder });
         }
       } catch (err) {
-        console.error("Error communicating with Payment Service:", err.message);
+        console.error("❌ [ORDER SERVICE] Error communicating with Payment Service:", err.message);
         if (req.idempotencyKey) {
           const { redis } = await import("@localmart/shared");
           await redis.del(req.idempotencyKey);
@@ -87,13 +98,16 @@ export const createOrder = async (req, res, next) => {
     }
 
     // Publish Order Created Event
+    console.log(`📡 [ORDER SERVICE] Publishing ORDER_CREATED event to Kafka topic ${TOPICS.ORDER_EVENTS}`);
     await publishEvent(TOPICS.ORDER_EVENTS, {
       type: "ORDER_CREATED",
       data: createdOrder,
     });
+    console.log("✅ [ORDER SERVICE] ORDER_CREATED Kafka event published.");
 
     res.status(201).json({ success: true, data: createdOrder, payment: paymentData });
   } catch (error) {
+    console.error("❌ [ORDER SERVICE] Fatal error during createOrder:", error);
     if (req.idempotencyKey) {
       const { redis } = await import("@localmart/shared");
       await redis.del(req.idempotencyKey);
@@ -184,11 +198,21 @@ export const cancelOrder = async (req, res, next) => {
 
 // Seller Order Management - Get Seller Orders
 export const getSellerOrders = async (req, res, next) => {
+  console.log("📥 [ORDER SERVICE] getSellerOrders API Hit!");
   try {
     const sellerId = req.user?.id || req.params.sellerId;
+    console.log("🔍 [ORDER SERVICE] Resolved Seller ID:", sellerId);
+    
+    if (!sellerId) {
+      console.warn("⚠️ [ORDER SERVICE] Missing sellerId. Cannot fetch seller orders.");
+      return res.status(400).json({ success: false, message: "Seller ID is required" });
+    }
+
     const orders = await Order.find({ sellerId }).sort({ createdAt: -1 });
+    console.log(`✅ [ORDER SERVICE] Fetched ${orders.length} orders for seller ${sellerId}`);
     res.status(200).json({ success: true, data: orders });
   } catch (error) {
+    console.error("❌ [ORDER SERVICE] Error fetching seller orders:", error);
     next(error);
   }
 };

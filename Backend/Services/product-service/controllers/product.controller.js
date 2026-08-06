@@ -81,29 +81,129 @@ export const getProductById = async (req, res) => {
   }
 };
 
+// @desc    Scan barcode
+// @route   POST /api/v1/products/scan-barcode
+// @access  Private/Seller
+export const scanBarcode = async (req, res) => {
+  try {
+    const { barcode } = req.body;
+    if (!barcode) {
+      return res.status(400).json({ success: false, message: "Barcode is required" });
+    }
+
+    // 1. Search in local MongoDB
+    let product = await Product.findOne({ barcode });
+    
+    if (product) {
+      return res.status(200).json({
+        success: true,
+        found: true,
+        product
+      });
+    }
+
+    // 2. Not found, fetch from external API (OpenFoodFacts as a real fallback)
+    const externalApiUrl = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+    const response = await fetch(externalApiUrl);
+    const data = await response.json();
+
+    if (data.status === 1 && data.product) {
+      const extProd = data.product;
+      const newProductData = {
+        name: extProd.product_name || "Unknown Product",
+        brand: extProd.brands || "Generic",
+        category: extProd.categories ? extProd.categories.split(",")[0] : "General",
+        description: extProd.generic_name || extProd.ingredients_text || "No description available",
+        manufacturer: extProd.manufacturing_places || "Unknown",
+        barcode: barcode,
+        barcodeType: barcode.length === 13 ? "EAN13" : barcode.length === 8 ? "EAN8" : "UPC",
+        price: 0,
+        stockAvailable: 0,
+        isTemplate: true,
+        status: "TEMPLATE",
+        images: extProd.image_url ? [{ url: extProd.image_url, public_id: "external" }] : []
+      };
+
+      product = await Product.create(newProductData);
+
+      return res.status(200).json({
+        success: true,
+        found: true,
+        product
+      });
+    }
+
+    // 3. Not found anywhere
+    return res.status(404).json({
+      success: false,
+      message: "Product not found."
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
 // @desc    Create new product
 // @route   POST /api/v1/products
 // @access  Private/Seller
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, brand, category, price, stockAvailable } = req.body;
+    const { name, description, brand, category, price, stockAvailable, barcode, manufacturer, barcodeType, discount } = req.body;
     
     // Images are handled by Multer Cloudinary storage
-    const images = req.files ? req.files.map(file => ({
+    let images = req.files && req.files.length > 0 ? req.files.map(file => ({
       url: file.path,
       public_id: file.filename
     })) : [];
 
-    const product = await Product.create({
-      name,
-      description,
-      brand,
-      category,
-      price: Number(price),
-      stockAvailable: Number(stockAvailable),
-      sellerId: req.user.userId, // From auth token
-      images,
-    });
+    // If client sent existing images (like from template)
+    if (req.body.images && images.length === 0) {
+       try {
+           const parsed = JSON.parse(req.body.images);
+           if (Array.isArray(parsed)) images = parsed;
+       } catch(e) {}
+    }
+
+    let product;
+    if (barcode) {
+      product = await Product.findOne({ barcode });
+    }
+
+    if (product) {
+      // Update template or existing product
+      product.name = name || product.name;
+      product.description = description || product.description;
+      product.brand = brand || product.brand;
+      product.category = category || product.category;
+      product.price = Number(price);
+      product.stockAvailable = Number(stockAvailable);
+      product.discount = discount ? Number(discount) : 0;
+      product.sellerId = req.user.userId; // From auth token
+      product.manufacturer = manufacturer || product.manufacturer;
+      product.barcodeType = barcodeType || product.barcodeType;
+      product.isTemplate = false;
+      product.status = "ACTIVE";
+      if (images.length > 0) product.images = images;
+      
+      await product.save();
+    } else {
+      product = await Product.create({
+        name,
+        description,
+        brand,
+        category,
+        price: Number(price),
+        stockAvailable: Number(stockAvailable),
+        discount: discount ? Number(discount) : 0,
+        sellerId: req.user.userId, // From auth token
+        images,
+        barcode,
+        manufacturer,
+        barcodeType,
+        isTemplate: false,
+        status: "ACTIVE"
+      });
+    }
 
     try {
       await publishEvent(TOPICS.PRODUCT_EVENTS, {
@@ -143,7 +243,7 @@ export const updateProduct = async (req, res) => {
       return res.status(403).json({ success: false, message: "Not authorized to update this product" });
     }
 
-    const { name, description, brand, category, price, stockAvailable, status, deletedImages } = req.body;
+    const { name, description, brand, category, price, stockAvailable, discount, status, deletedImages } = req.body;
     
     // Delete requested images from cloudinary
     if (deletedImages) {
@@ -169,6 +269,7 @@ export const updateProduct = async (req, res) => {
     if (category) product.category = category;
     if (price !== undefined) product.price = Number(price);
     if (stockAvailable !== undefined) product.stockAvailable = Number(stockAvailable);
+    if (discount !== undefined) product.discount = Number(discount);
     if (status) product.status = status;
 
     await product.save();

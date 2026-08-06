@@ -101,7 +101,7 @@ export default function Navbar({
 
   const getUserDisplayName = () => {
     if (!user) return "";
-    return user.full_name || user.username || user.name || user.email || "Account";
+    return user.fullName || user.full_name || user.username || user.name || user.email || "Account";
   };
 
   const getUserEmail = () => {
@@ -112,6 +112,16 @@ export default function Navbar({
   const getUserInitial = () => {
     const name = getUserDisplayName();
     return name ? name[0].toUpperCase() : "A";
+  };
+
+  const getDisplayLocation = () => {
+    if (user) {
+      if (user.address) return user.address;
+      if (user.location) return user.location;
+      if (user.addresses && user.addresses.length > 0) return user.addresses[0].street || user.addresses[0].city || "Address Added";
+      return "📍 Please Add Address";
+    }
+    return location;
   };
 
   return (
@@ -187,16 +197,41 @@ export default function Navbar({
                 Deliver to
               </Typography>
               <Typography variant="body2" fontWeight={700} noWrap sx={{ color: "text.primary" }}>
-                {location}
+                {getDisplayLocation()}
               </Typography>
             </Box>
           </Button>
 
           <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-            <MenuItem onClick={() => handleLocationClick("Vijay Nagar, Indore")}>Vijay Nagar, Indore</MenuItem>
-            <MenuItem onClick={() => handleLocationClick("Palasia, Indore")}>Palasia, Indore</MenuItem>
-            <MenuItem onClick={() => handleLocationClick("Rajwada, Indore")}>Rajwada, Indore</MenuItem>
-            <MenuItem onClick={() => handleLocationClick("Bhawarkua, Indore")}>Bhawarkua, Indore</MenuItem>
+            {!user ? (
+              <MenuItem onClick={() => { setAnchorEl(null); navigate("/login"); }} sx={{ color: "primary.main", fontWeight: 700 }}>
+                Login to view addresses
+              </MenuItem>
+            ) : (
+              <>
+                {user.addresses && user.addresses.length > 0 ? (
+                  user.addresses.map((addr, index) => (
+                    <MenuItem key={index} onClick={() => handleLocationClick(`${addr.street}, ${addr.city}`)}>
+                      {addr.street}, {addr.city}
+                    </MenuItem>
+                  ))
+                ) : (user.address || user.location) ? (
+                  <MenuItem onClick={() => handleLocationClick(user.address || user.location)}>
+                    {user.address || user.location}
+                  </MenuItem>
+                ) : (
+                  <MenuItem onClick={() => { setAnchorEl(null); navigate("/profile"); }} sx={{ color: "primary.main", fontWeight: 700 }}>
+                    + Add New Address
+                  </MenuItem>
+                )}
+                
+                {(user.addresses?.length > 0 || user.address || user.location) && (
+                  <MenuItem onClick={() => { setAnchorEl(null); navigate("/profile"); }} sx={{ color: "primary.main", fontWeight: 700, borderTop: "1px solid #eee" }}>
+                    + Add Another Address
+                  </MenuItem>
+                )}
+              </>
+            )}
           </Menu>
 
           {/* DELIVERY / PICKUP TOGGLE */}

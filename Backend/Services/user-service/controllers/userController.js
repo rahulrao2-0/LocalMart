@@ -5,6 +5,35 @@ import { cloudinary } from "../config/cloudinary.js";
 export const getProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
+    let profile = await UserProfile.findOne({ userId });
+
+    if (!profile) {
+      // Auto-create the profile if it doesn't exist
+      profile = new UserProfile({
+        userId: userId,
+        email: req.user.email || `user_${userId}@localmart.in`,
+        fullName: req.user.name || req.user.fullName || "LocalMart User",
+      });
+      await profile.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile,
+    });
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+// Internal helper to get profile by userId (unauthenticated, for microservice communication)
+export const getProfileInternal = async (req, res) => {
+  try {
+    const { userId } = req.params;
     const profile = await UserProfile.findOne({ userId });
 
     if (!profile) {
@@ -19,7 +48,7 @@ export const getProfile = async (req, res) => {
       profile,
     });
   } catch (error) {
-    console.error("Get Profile Error:", error);
+    console.error("Get Profile Internal Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",

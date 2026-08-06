@@ -21,29 +21,49 @@ const productSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: [true, "Price is required"],
       min: [0, "Price cannot be negative"],
+      default: 0
     },
     stockAvailable: {
       type: Number,
-      required: [true, "Stock quantity is required"],
       min: [0, "Stock cannot be negative"],
+      default: 0,
+    },
+    discount: {
+      type: Number,
+      min: [0, "Discount cannot be negative"],
+      max: [100, "Discount cannot exceed 100%"],
       default: 0,
     },
     images: [
       {
         url: { type: String, required: true },
-        public_id: { type: String, required: true },
+        public_id: { type: String },
       },
     ],
     sellerId: {
       type: String,
-      required: true,
       index: true,
+    },
+    barcode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    barcodeType: {
+      type: String,
+    },
+    manufacturer: {
+      type: String,
+    },
+    isTemplate: {
+      type: Boolean,
+      default: false,
     },
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE", "DELETED"],
+      enum: ["ACTIVE", "INACTIVE", "DELETED", "TEMPLATE"],
       default: "ACTIVE",
     },
     rating: {

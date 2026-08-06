@@ -3,7 +3,8 @@ import {
   fetchSellerProducts as fetchSellerProductsApi,
   createProduct as createProductApi,
   updateProduct as updateProductApi,
-  deleteProduct as deleteProductApi
+  deleteProduct as deleteProductApi,
+  scanBarcode as scanBarcodeApi
 } from '../../services/productApi';
 
 export const fetchProducts = createAsyncThunk(
@@ -13,6 +14,18 @@ export const fetchProducts = createAsyncThunk(
       const response = await fetchSellerProductsApi(sellerId);
       // The API returns { success: true, data: [...] }
       return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+export const scanBarcodeThunk = createAsyncThunk(
+  'products/scanBarcode',
+  async (barcode, { rejectWithValue }) => {
+    try {
+      const response = await scanBarcodeApi(barcode);
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }

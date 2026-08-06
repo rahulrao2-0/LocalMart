@@ -4,6 +4,49 @@ class TemplateService {
         let htmlContent = `<h1>${data.title || "Notification"}</h1><p>${data.message}</p>`;
 
         switch (type) {
+            case 'ORDER_CREATED':
+                subject = "Order Placed Successfully - LocalMart";
+                htmlContent = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #6C5DD3;">🛒 Order Placed Successfully!</h2>
+                        <p>Hi,</p>
+                        <p>Your order has been placed. We are currently waiting for payment confirmation.</p>
+                        <blockquote style="background: #f9f9f9; padding: 15px; border-left: 4px solid #6C5DD3; margin: 20px 0;">
+                            <strong>Message:</strong> ${data.message}
+                        </blockquote>
+                        <p>Thank you for shopping with LocalMart!</p>
+                    </div>
+                `;
+                break;
+            case 'ORDER_CONFIRMED':
+                subject = "Order Confirmed! - LocalMart";
+                htmlContent = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #4caf50;">✅ Order Confirmed!</h2>
+                        <p>Hi,</p>
+                        <p>Great news! Your payment was successful, and your order has been confirmed.</p>
+                        <blockquote style="background: #f4fbf4; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;">
+                            <strong>Message:</strong> ${data.message}
+                        </blockquote>
+                        <p>Your order is now being processed by the merchant. Track it inside your profile app.</p>
+                        <p>Thank you for shopping with LocalMart!</p>
+                    </div>
+                `;
+                break;
+            case 'ORDER_CANCELLED':
+                subject = "Order Cancelled - LocalMart";
+                htmlContent = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #f44336;">❌ Order Cancelled</h2>
+                        <p>Hi,</p>
+                        <p>We wanted to let you know that your order has been cancelled.</p>
+                        <blockquote style="background: #fdf2f2; padding: 15px; border-left: 4px solid #f44336; margin: 20px 0;">
+                            <strong>Message:</strong> ${data.message}
+                        </blockquote>
+                        <p>If you have any questions, please contact our helpline.</p>
+                    </div>
+                `;
+                break;
             case 'PAYMENT_FAILED':
                 subject = "Payment Failed - LocalMart";
                 htmlContent = `<h1>Payment Failed</h1><p>Dear user, your payment failed. Please try again. Details: ${data.message}</p>`;

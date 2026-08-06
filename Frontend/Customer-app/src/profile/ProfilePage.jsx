@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setUser } from "../features/auth/authSlice";
@@ -95,8 +95,12 @@ export default function ProfilePage({ themeMode }) {
       setLoading(true);
       const res = await getProfileApi();
       if (res.success && res.profile) {
-        setProfile(res.profile);
-        dispatch(setUser({ ...authUser, ...res.profile }));
+        const profileData = { ...res.profile };
+        if (!profileData.fullName || profileData.fullName === "LocalMart User") {
+          profileData.fullName = authUser?.full_name || authUser?.fullName || "LocalMart User";
+        }
+        setProfile(profileData);
+        dispatch(setUser({ ...authUser, ...profileData }));
       }
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -147,6 +151,7 @@ export default function ProfilePage({ themeMode }) {
 
       if (res.success) {
         setIsEditing(false);
+        dispatch(setUser({ ...authUser, ...res.profile }));
         setSuccessMsg("Profile details saved successfully!");
         setTimeout(() => setSuccessMsg(""), 3500);
       }
@@ -348,7 +353,7 @@ export default function ProfilePage({ themeMode }) {
               <Box sx={{ pb: { sm: 1 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, justifyContent: { xs: "center", sm: "flex-start" } }}>
                   <Typography variant="h5" fontWeight={800}>
-                    {profile.fullName || "LocalMart User"}
+                    {profile.fullName || authUser?.full_name || authUser?.name || authUser?.email || "LocalMart User"}
                   </Typography>
                   <Chip
                     icon={<VerifiedUserOutlined sx={{ fontSize: "16px !important" }} />}

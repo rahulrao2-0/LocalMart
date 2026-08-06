@@ -12,7 +12,9 @@ import AddIcon from '@mui/icons-material/Add';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import SearchIcon from '@mui/icons-material/Search';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
-import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../features/products/productSlice';
+import DocumentScannerIcon from '@mui/icons-material/DocumentScanner';
+import { fetchProducts, createProduct, updateProduct, deleteProduct, scanBarcodeThunk } from '../../features/products/productSlice';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const ProductsList = () => {
   const dispatch = useDispatch();
@@ -22,9 +24,58 @@ const ProductsList = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({ 
-    name: '', description: '', brand: '', category: '', price: '', stockAvailable: ''
+    name: '', description: '', brand: '', category: '', price: '', stockAvailable: '', discount: '',
+    barcode: '', barcodeType: '', manufacturer: '', imagesData: ''
   });
   const [imageFiles, setImageFiles] = useState([]);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+
+  useEffect(() => {
+    let scanner;
+    if (showScanner) {
+      scanner = new Html5QrcodeScanner(
+        "barcode-reader",
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        false
+      );
+      scanner.render(
+        async (decodedText) => {
+          scanner.clear();
+          setShowScanner(false);
+          setScanLoading(true);
+          try {
+            const res = await dispatch(scanBarcodeThunk(decodedText)).unwrap();
+            if (res && res.success) {
+              const p = res.product;
+              setFormData(prev => ({
+                ...prev,
+                name: p.name || prev.name,
+                brand: p.brand || prev.brand,
+                category: p.category || prev.category,
+                description: p.description || prev.description,
+                barcode: p.barcode || decodedText,
+                barcodeType: p.barcodeType || prev.barcodeType,
+                manufacturer: p.manufacturer || prev.manufacturer,
+                imagesData: p.images ? JSON.stringify(p.images) : prev.imagesData
+              }));
+              alert("Product details fetched successfully! Please fill remaining fields.");
+            }
+          } catch (err) {
+            alert(err || "Failed to fetch product details.");
+          } finally {
+            setScanLoading(false);
+          }
+        },
+        (error) => {} // ignore ongoing scan errors
+      );
+    }
+    return () => {
+      if (scanner) {
+        scanner.clear().catch(e => console.error("Scanner clear error", e));
+      }
+    };
+  }, [showScanner, dispatch]);
 
   useEffect(() => {
     if (user) {
@@ -42,13 +93,19 @@ const ProductsList = () => {
         brand: product.brand || '',
         category: product.category || '',
         price: product.price || '',
-        stockAvailable: product.stockAvailable || ''
+        stockAvailable: product.stockAvailable || '',
+        discount: product.discount || '',
+        barcode: product.barcode || '',
+        barcodeType: product.barcodeType || '',
+        manufacturer: product.manufacturer || '',
+        imagesData: ''
       });
     } else {
       setEditingProduct(null);
-      setFormData({ name: '', description: '', brand: '', category: '', price: '', stockAvailable: '' });
+      setFormData({ name: '', description: '', brand: '', category: '', price: '', stockAvailable: '', discount: '', barcode: '', barcodeType: '', manufacturer: '', imagesData: '' });
     }
     setOpenDialog(true);
+    setShowScanner(false);
   };
 
   const handleCloseDialog = () => {
@@ -72,6 +129,11 @@ const ProductsList = () => {
     data.append('category', formData.category);
     data.append('price', formData.price);
     data.append('stockAvailable', formData.stockAvailable);
+    if (formData.discount) data.append('discount', formData.discount);
+    if (formData.barcode) data.append('barcode', formData.barcode);
+    if (formData.barcodeType) data.append('barcodeType', formData.barcodeType);
+    if (formData.manufacturer) data.append('manufacturer', formData.manufacturer);
+    if (formData.imagesData) data.append('images', formData.imagesData);
     
     imageFiles.forEach(file => {
       data.append('images', file);
@@ -209,10 +271,31 @@ const ProductsList = () => {
         fullWidth
         PaperProps={{ sx: { borderRadius: 4, p: 1 } }}
       >
-        <DialogTitle sx={{ pb: 1, fontWeight: 800, fontSize: '1.5rem' }}>
+        <DialogTitle sx={{ pb: 1, fontWeight: 800, fontSize: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {editingProduct ? 'Edit Product Details' : 'Create New Product'}
+          {!editingProduct && (
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<DocumentScannerIcon />}
+              onClick={() => setShowScanner(!showScanner)}
+              disabled={scanLoading}
+            >
+              {scanLoading ? 'Scanning...' : showScanner ? 'Close Scanner' : 'Smart Scan Barcode'}
+            </Button>
+          )}
         </DialogTitle>
         <DialogContent>
+          <Box sx={{ width: '100%' }}>
+            {showScanner && (
+              <Box sx={{ mb: 2, p: 2, border: '2px dashed #1976d2', borderRadius: 2 }}>
+                <Typography variant="body2" color="text.secondary" align="center" gutterBottom>
+                  Point your camera at the product barcode
+                </Typography>
+                <Box id="barcode-reader" sx={{ width: '100%', maxWidth: '500px', mx: 'auto' }}></Box>
+              </Box>
+            )}
+          </Box>
           <Box component="form" sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
@@ -247,7 +330,7 @@ const ProductsList = () => {
                   variant="outlined"
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={2}>
                 <TextField
                   name="price"
                   label="Price ($)"
@@ -259,7 +342,7 @@ const ProductsList = () => {
                   variant="outlined"
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={2}>
                 <TextField
                   name="stockAvailable"
                   label="Stock Quantity"
@@ -269,6 +352,18 @@ const ProductsList = () => {
                   fullWidth
                   required
                   variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={2}>
+                <TextField
+                  name="discount"
+                  label="Discount (%)"
+                  type="number"
+                  value={formData.discount}
+                  onChange={handleChange}
+                  fullWidth
+                  variant="outlined"
+                  inputProps={{ min: 0, max: 100 }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -282,6 +377,39 @@ const ProductsList = () => {
                   required
                   rows={4}
                   variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  name="barcode"
+                  label="Barcode (ISBN, UPC, EAN)"
+                  value={formData.barcode}
+                  onChange={handleChange}
+                  fullWidth
+                  variant="outlined"
+                  InputLabelProps={{ shrink: !!formData.barcode || undefined }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  name="barcodeType"
+                  label="Barcode Type"
+                  value={formData.barcodeType}
+                  onChange={handleChange}
+                  fullWidth
+                  variant="outlined"
+                  InputLabelProps={{ shrink: !!formData.barcodeType || undefined }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  name="manufacturer"
+                  label="Manufacturer"
+                  value={formData.manufacturer}
+                  onChange={handleChange}
+                  fullWidth
+                  variant="outlined"
+                  InputLabelProps={{ shrink: !!formData.manufacturer || undefined }}
                 />
               </Grid>
               <Grid item xs={12}>

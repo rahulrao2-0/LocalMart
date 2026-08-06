@@ -163,6 +163,7 @@ export const signup = async (req, res) => {
       userId: userId,
       email: email,
       roles: assignedRolesArray,
+      fullName: full_name,
     };
 
     const accessToken = createAccessToken(payload);
@@ -179,6 +180,19 @@ export const signup = async (req, res) => {
     );
 
     await setAuthCookies(res, accessToken, refreshToken);
+
+    // Publish USER_CREATED Kafka Event immediately upon registration
+    try {
+      await publishEvent(TOPICS.USER_EVENTS, {
+        eventType: "USER_CREATED",
+        userId: userId,
+        email: email,
+        fullName: full_name,
+      });
+      console.log(`📡 Kafka USER_CREATED event published for ${email} on signup`);
+    } catch (kafkaErr) {
+      console.error("❌ Kafka publishing error on signup:", kafkaErr);
+    }
 
     return res.status(201).json({
       success: true,
@@ -265,6 +279,7 @@ export const login = async (req, res) => {
       userId: user.id,
       email: user.email,
       roles: user.roles,
+      fullName: user.full_name,
     };
 
     const accessToken = createAccessToken(payload);
@@ -370,11 +385,12 @@ export const refresh = async (req, res) => {
       [tokenRows[0].id]
     );
 
-    // Create new Tokens
+     // Create new Tokens
     const payload = {
       userId: user.id,
       email: user.email,
       roles: user.roles,
+      fullName: user.full_name,
     };
 
     const newAccessToken = createAccessToken(payload);
@@ -509,6 +525,7 @@ export const verifyEmail = async (req, res) => {
         userId: userData.id,
         email: userData.email,
         roles: userData.roles || ["CUSTOMER"],
+        fullName: userData.full_name,
       };
 
       const accessToken = createAccessToken(payload);

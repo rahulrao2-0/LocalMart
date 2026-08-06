@@ -11,6 +11,15 @@ export const fetchProductById = async (id) => {
   return response.data;
 };
 
+export const scanBarcode = async (barcode) => {
+  const response = await apiFetch('/products/scan-barcode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ barcode })
+  });
+  return response.data;
+};
+
 export const createProduct = async (productData) => {
   const response = await apiFetch('/products', {
     method: 'POST',
