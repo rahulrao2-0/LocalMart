@@ -68,6 +68,15 @@ app.use(
   })
 );
 
+// Proxy for inventory API endpoints (/api/v1/inventory)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/inventory",
+    target: "http://localhost:3007",
+    changeOrigin: true,
+  })
+);
+
 app.listen(3000, () => {
   console.log("API Gateway running on port 3000");
 });
