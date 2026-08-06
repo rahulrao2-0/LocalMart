@@ -1,5 +1,21 @@
 const API_BASE_URL = 'http://localhost:3000/api/v1';
 
+let isRefreshing = false;
+let refreshPromise = null;
+
+const refreshToken = async () => {
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include'
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Token refresh failed');
+  }
+  return data;
+};
+
 export const apiFetch = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   
@@ -8,7 +24,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
-  // Only set Content-Type to JSON if it's not a FormData object (browser sets correct boundary for FormData automatically)
+  // Only set Content-Type to JSON if it's not a FormData object
   if (!(options.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
@@ -16,31 +32,45 @@ export const apiFetch = async (endpoint, options = {}) => {
   const fetchOptions = {
     ...options,
     headers,
-    // CRITICAL: This ensures cookies (including HttpOnly access/refresh tokens) are always sent to the API Gateway!
     credentials: 'include' 
   };
 
   let response = await fetch(url, fetchOptions);
 
-  // Handle 401 Unauthorized globally
-  if (response.status === 401) {
-    localStorage.removeItem('seller_user');
-    
-    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-      window.location.href = '/login';
+  // If 401 Unauthorized, attempt automatic token refresh before giving up
+  if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = refreshToken().finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+    }
+
+    try {
+      const refreshResult = await refreshPromise;
+      if (refreshResult && refreshResult.success) {
+        // Retry the original request with the newly issued access cookie
+        response = await fetch(url, fetchOptions);
+      }
+    } catch (refreshError) {
+      // Refresh token is also expired or invalid -> log out
+      localStorage.removeItem('seller_user');
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      throw refreshError;
     }
   }
 
   let data;
   try {
-    // Try parsing JSON response
     data = await response.json();
   } catch (err) {
     data = null;
   }
 
   if (!response.ok) {
-    // Mimic Axios error structure for compatibility with existing slices
     const error = new Error(data?.message || response.statusText);
     error.response = {
       status: response.status,
@@ -49,7 +79,6 @@ export const apiFetch = async (endpoint, options = {}) => {
     throw error;
   }
 
-  // Mimic Axios response structure
   return {
     status: response.status,
     data: data

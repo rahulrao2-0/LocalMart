@@ -412,7 +412,7 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
                           {item.product.name}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3, mb: 1 }}>
-                          {item.product.brand || "Local Preferred Vendor"}
+                          {item.product.brand || "Local Preferred Vendor"} {item.product.weight ? `(${item.product.weight})` : ''}
                         </Typography>
 
                         <Typography variant="h6" color="primary.main" sx={{ fontWeight: 900 }}>

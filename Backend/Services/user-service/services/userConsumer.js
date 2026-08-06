@@ -28,24 +28,28 @@ export const startUserConsumer = async () => {
             const { userId, email, fullName } = payload;
             console.log(`⚙️ [KAFKA CONSUMER] Processing USER_CREATED for User ID: ${userId}, Email: ${email}`);
 
-            const existingProfile = await UserProfile.findOne({ userId });
-            if (!existingProfile) {
-              const newProfile = await UserProfile.create({
+            let profile = await UserProfile.findOne({ $or: [{ userId }, { email }] });
+            if (!profile) {
+              profile = await UserProfile.create({
                 userId,
                 email,
                 fullName,
               });
-              console.log(`✅ [USER SERVICE] Created new MongoDB UserProfile document:`, newProfile._id);
+              console.log(`✅ [USER SERVICE] Created new MongoDB UserProfile document:`, profile._id);
             } else {
-              console.log(`ℹ️ [USER SERVICE] User Profile already exists in MongoDB for User ID: ${userId}`);
+              profile.userId = userId;
+              if (email) profile.email = email;
+              if (fullName) profile.fullName = fullName;
+              await profile.save();
+              console.log(`ℹ️ [USER SERVICE] Updated existing UserProfile in MongoDB for User ID: ${userId}`);
             }
           } else if (payload.eventType === "SELLER_CREATED") {
             const { userId, email, businessName, ownerName, phone, businessType, gstNumber, panNumber } = payload;
             console.log(`⚙️ [KAFKA CONSUMER] Processing SELLER_CREATED for User ID: ${userId}, Business: ${businessName}`);
 
-            const existingSeller = await Seller.findOne({ authUserId: userId });
-            if (!existingSeller) {
-              const newSeller = await Seller.create({
+            let seller = await Seller.findOne({ $or: [{ authUserId: userId }, { email }] });
+            if (!seller) {
+              seller = await Seller.create({
                 authUserId: userId,
                 email: email,
                 businessName: businessName || 'Unknown Business',
@@ -55,10 +59,15 @@ export const startUserConsumer = async () => {
                 gstNumber: gstNumber || "",
                 panNumber: panNumber || "",
               });
-              console.log(`✅ [USER SERVICE] Created new MongoDB Seller document:`, newSeller._id);
+              console.log(`✅ [USER SERVICE] Created new MongoDB Seller document:`, seller._id);
             } else {
-              console.log(`ℹ️ [USER SERVICE] Seller Profile already exists in MongoDB for User ID: ${userId}`);
-              // Optionally update fields here if required.
+              seller.authUserId = userId;
+              if (email) seller.email = email;
+              if (businessName) seller.businessName = businessName;
+              if (ownerName) seller.ownerName = ownerName;
+              if (phone) seller.phone = phone;
+              await seller.save();
+              console.log(`ℹ️ [USER SERVICE] Updated existing Seller profile in MongoDB for User ID: ${userId}`);
             }
           } else {
             console.log(`⚠️ [KAFKA CONSUMER] Unhandled eventType: "${payload.eventType}"`);

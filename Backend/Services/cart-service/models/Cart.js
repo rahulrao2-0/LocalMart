@@ -16,6 +16,10 @@ const cartItemSchema = new mongoose.Schema({
     ProductImage: {
         type: String
     },
+    Weight: {
+        type: String,
+        default: ""
+    },
     Quantity: {
         type: Number,
         required: true,

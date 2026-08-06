@@ -1,13 +1,13 @@
 export const setAuthCookies = (res, accessToken, refreshToken) => {
   const isProduction = process.env.NODE_ENV === "production";
 
-  // Access Token (15 Minutes)
+  // Access Token (24 Hours)
   res.cookie("accessToken", accessToken, {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? "none" : "lax",
     path: "/",
-    maxAge: 15 * 60 * 1000, // 15 minutes
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
   });
 
   // Refresh Token (7 Days)

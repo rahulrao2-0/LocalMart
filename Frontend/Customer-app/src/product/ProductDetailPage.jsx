@@ -77,6 +77,7 @@ export default function ProductDetailPage({ onAddToCart, themeMode }) {
             about: data.description || "Discover premium quality with this locally sourced item. Built to last and sourced directly from nearby vendors to ensure you get the best value and authenticity.",
             stockAvailable: data.stockAvailable || 10,
             brand: data.brand || "LocalMart Signature",
+            weight: data.weight || "",
           };
 
           setProduct(mappedProduct);
@@ -311,7 +312,7 @@ export default function ProductDetailPage({ onAddToCart, themeMode }) {
               <Grid item xs={12} md={6.5}>
                 <Box sx={{ p: { xs: 0, md: 2 } }}>
                   <Typography variant="overline" sx={{ fontWeight: 800, color: "primary.main", letterSpacing: 2, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <VerifiedIcon fontSize="small" /> {product.brand}
+                    <VerifiedIcon fontSize="small" /> {product.brand} {product.weight ? `• ${product.weight}` : ''}
                   </Typography>
                   <Typography variant="h3" sx={{ fontWeight: 900, mt: 1, mb: 2, letterSpacing: -1, lineHeight: 1.1 }}>
                     {product.name}

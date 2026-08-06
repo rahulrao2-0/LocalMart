@@ -48,8 +48,7 @@ const startServer = async () => {
 
 startServer();
 
-await Product.insertMany(products);
-
-console.log("?? Demi data inserted into the database.");
+// await Product.insertMany(products);
+// console.log("?? Demi data inserted into the database.");
 
 

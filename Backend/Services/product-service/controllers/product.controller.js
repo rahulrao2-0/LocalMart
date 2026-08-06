@@ -9,7 +9,7 @@ export const getProducts = async (req, res) => {
   try {
     const { keyword, category, status, sellerId, page, limit } = req.query;
 
-    // Set defaults: page 1, limit 2 for testing
+    // Set defaults: page 1, limit 2
     const pageNum = Number(page) || 1;
     const limitNum = Number(limit) || 2;
 
@@ -81,6 +81,135 @@ export const getProductById = async (req, res) => {
   }
 };
 
+// Helper to extract weight/quantity from API payload or title regex
+const parseWeight = (dataObj, title = "") => {
+  if (dataObj.quantity && typeof dataObj.quantity === "string" && dataObj.quantity.trim()) {
+    return dataObj.quantity.trim();
+  }
+  if (dataObj.size && typeof dataObj.size === "string" && dataObj.size.trim()) {
+    return dataObj.size.trim();
+  }
+  if (dataObj.product_quantity && dataObj.product_quantity_unit) {
+    return `${dataObj.product_quantity} ${dataObj.product_quantity_unit}`;
+  }
+  if (dataObj.net_weight_value && dataObj.net_weight_unit) {
+    return `${dataObj.net_weight_value} ${dataObj.net_weight_unit}`;
+  }
+  if (dataObj.serving_size && typeof dataObj.serving_size === "string" && dataObj.serving_size.trim()) {
+    return dataObj.serving_size.trim();
+  }
+
+  // Extract pattern like 500g, 1.5kg, 750ml, 2L, 12 oz from Title
+  if (title) {
+    const match = title.match(/(\d+(?:\.\d+)?\s*(?:kg|g|gm|gms|ml|l|ltr|liter|liters|oz|lb|lbs|fl\.?\s*oz))\b/i);
+    if (match) {
+      return match[1].trim();
+    }
+  }
+
+  return "";
+};
+
+// External Barcode APIs Fallback Waterfall
+const fetchFromExternalBarcodeApis = async (barcode) => {
+  // 1. Open Food Facts (Groceries, Food, Snacks, Beverages)
+  try {
+    console.log(`🔍 [API 1] Querying OpenFoodFacts for barcode: ${barcode}...`);
+    const res1 = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`, { signal: AbortSignal.timeout(3000) });
+    const data1 = await res1.json();
+    if (data1 && data1.status === 1 && data1.product && (data1.product.product_name || data1.product.product_name_en)) {
+      const p = data1.product;
+      const titleName = p.product_name || p.product_name_en;
+      const extractedWeight = parseWeight(p, titleName);
+      console.log(`✅ [API 1 MATCH] OpenFoodFacts found product: ${titleName} (Weight: ${extractedWeight || 'N/A'})`);
+      return {
+        name: titleName,
+        brand: p.brands || "Generic",
+        category: p.categories ? p.categories.split(",")[0].trim() : "Groceries",
+        description: p.generic_name || p.ingredients_text || "No description available",
+        manufacturer: p.manufacturing_places || "Unknown",
+        weight: extractedWeight,
+        images: p.image_url ? [{ url: p.image_url, public_id: "external_off" }] : []
+      };
+    }
+  } catch (err) {
+    console.log("⚠️ [API 1] OpenFoodFacts failed or timed out:", err.message);
+  }
+
+  // 2. UPC Item DB Trial API (General Retail, Electronics, Household, Books)
+  try {
+    console.log(`🔍 [API 2] Querying UPCItemDB for barcode: ${barcode}...`);
+    const res2 = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`, { signal: AbortSignal.timeout(3000) });
+    const data2 = await res2.json();
+    if (data2 && data2.code === "OK" && data2.items && data2.items.length > 0 && data2.items[0].title) {
+      const item = data2.items[0];
+      const extractedWeight = parseWeight(item, item.title);
+      console.log(`✅ [API 2 MATCH] UPCItemDB found product: ${item.title} (Weight: ${extractedWeight || 'N/A'})`);
+      return {
+        name: item.title,
+        brand: item.brand || "Generic",
+        category: item.category ? item.category.split(">").pop().trim() : "General",
+        description: item.description || "No description available",
+        manufacturer: item.publisher || item.brand || "Unknown",
+        weight: extractedWeight,
+        images: item.images && item.images.length > 0 ? [{ url: item.images[0], public_id: "external_upc" }] : []
+      };
+    }
+  } catch (err) {
+    console.log("⚠️ [API 2] UPCItemDB failed or timed out:", err.message);
+  }
+
+  // 3. Open Products Facts (General Goods, Hardware, Home Items)
+  try {
+    console.log(`🔍 [API 3] Querying OpenProductsFacts for barcode: ${barcode}...`);
+    const res3 = await fetch(`https://world.openproductsfacts.org/api/v0/product/${barcode}.json`, { signal: AbortSignal.timeout(3000) });
+    const data3 = await res3.json();
+    if (data3 && data3.status === 1 && data3.product && (data3.product.product_name || data3.product.product_name_en)) {
+      const p = data3.product;
+      const titleName = p.product_name || p.product_name_en;
+      const extractedWeight = parseWeight(p, titleName);
+      console.log(`✅ [API 3 MATCH] OpenProductsFacts found product: ${titleName} (Weight: ${extractedWeight || 'N/A'})`);
+      return {
+        name: titleName,
+        brand: p.brands || "Generic",
+        category: p.categories ? p.categories.split(",")[0].trim() : "General",
+        description: p.generic_name || "No description available",
+        manufacturer: p.manufacturing_places || "Unknown",
+        weight: extractedWeight,
+        images: p.image_url ? [{ url: p.image_url, public_id: "external_opf" }] : []
+      };
+    }
+  } catch (err) {
+    console.log("⚠️ [API 3] OpenProductsFacts failed or timed out:", err.message);
+  }
+
+  // 4. Open Beauty Facts (Cosmetics, Personal Care, Toiletries)
+  try {
+    console.log(`🔍 [API 4] Querying OpenBeautyFacts for barcode: ${barcode}...`);
+    const res4 = await fetch(`https://world.openbeautyfacts.org/api/v0/product/${barcode}.json`, { signal: AbortSignal.timeout(3000) });
+    const data4 = await res4.json();
+    if (data4 && data4.status === 1 && data4.product && (data4.product.product_name || data4.product.product_name_en)) {
+      const p = data4.product;
+      const titleName = p.product_name || p.product_name_en;
+      const extractedWeight = parseWeight(p, titleName);
+      console.log(`✅ [API 4 MATCH] OpenBeautyFacts found product: ${titleName} (Weight: ${extractedWeight || 'N/A'})`);
+      return {
+        name: titleName,
+        brand: p.brands || "Generic",
+        category: p.categories ? p.categories.split(",")[0].trim() : "Beauty & Personal Care",
+        description: p.generic_name || "No description available",
+        manufacturer: p.manufacturing_places || "Unknown",
+        weight: extractedWeight,
+        images: p.image_url ? [{ url: p.image_url, public_id: "external_obf" }] : []
+      };
+    }
+  } catch (err) {
+    console.log("⚠️ [API 4] OpenBeautyFacts failed or timed out:", err.message);
+  }
+
+  return null;
+};
+
 // @desc    Scan barcode
 // @route   POST /api/v1/products/scan-barcode
 // @access  Private/Seller
@@ -95,6 +224,7 @@ export const scanBarcode = async (req, res) => {
     let product = await Product.findOne({ barcode });
     
     if (product) {
+      console.log(`✅ [LOCAL DB MATCH] Product found in MongoDB for barcode: ${barcode}`);
       return res.status(200).json({
         success: true,
         found: true,
@@ -102,26 +232,24 @@ export const scanBarcode = async (req, res) => {
       });
     }
 
-    // 2. Not found, fetch from external API (OpenFoodFacts as a real fallback)
-    const externalApiUrl = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
-    const response = await fetch(externalApiUrl);
-    const data = await response.json();
+    // 2. Query external barcode APIs in waterfall order
+    const extProd = await fetchFromExternalBarcodeApis(barcode);
 
-    if (data.status === 1 && data.product) {
-      const extProd = data.product;
+    if (extProd) {
       const newProductData = {
-        name: extProd.product_name || "Unknown Product",
-        brand: extProd.brands || "Generic",
-        category: extProd.categories ? extProd.categories.split(",")[0] : "General",
-        description: extProd.generic_name || extProd.ingredients_text || "No description available",
-        manufacturer: extProd.manufacturing_places || "Unknown",
+        name: extProd.name || "Scanned Product",
+        brand: extProd.brand || "Generic",
+        category: extProd.category || "General",
+        description: extProd.description || "Scanned via barcode",
+        manufacturer: extProd.manufacturer || "Unknown",
+        weight: extProd.weight || "",
         barcode: barcode,
         barcodeType: barcode.length === 13 ? "EAN13" : barcode.length === 8 ? "EAN8" : "UPC",
         price: 0,
         stockAvailable: 0,
         isTemplate: true,
         status: "TEMPLATE",
-        images: extProd.image_url ? [{ url: extProd.image_url, public_id: "external" }] : []
+        images: extProd.images || []
       };
 
       product = await Product.create(newProductData);
@@ -133,10 +261,30 @@ export const scanBarcode = async (req, res) => {
       });
     }
 
-    // 3. Not found anywhere
-    return res.status(404).json({
-      success: false,
-      message: "Product not found."
+    // 3. Fallback: Create a blank template with the scanned barcode pre-filled
+    const templateData = {
+      name: "",
+      brand: "",
+      category: "General",
+      description: "",
+      manufacturer: "",
+      weight: "",
+      barcode: barcode,
+      barcodeType: barcode.length === 13 ? "EAN13" : barcode.length === 8 ? "EAN8" : "UPC",
+      price: 0,
+      stockAvailable: 0,
+      isTemplate: true,
+      status: "TEMPLATE",
+      images: []
+    };
+
+    product = await Product.create(templateData);
+
+    return res.status(200).json({
+      success: true,
+      found: true,
+      product,
+      message: "Barcode registered. Please complete product details."
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
@@ -148,7 +296,7 @@ export const scanBarcode = async (req, res) => {
 // @access  Private/Seller
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, brand, category, price, stockAvailable, barcode, manufacturer, barcodeType, discount } = req.body;
+    const { name, description, brand, category, price, stockAvailable, barcode, manufacturer, barcodeType, discount, weight } = req.body;
     
     // Images are handled by Multer Cloudinary storage
     let images = req.files && req.files.length > 0 ? req.files.map(file => ({
@@ -180,6 +328,7 @@ export const createProduct = async (req, res) => {
       product.discount = discount ? Number(discount) : 0;
       product.sellerId = req.user.userId; // From auth token
       product.manufacturer = manufacturer || product.manufacturer;
+      product.weight = weight || product.weight;
       product.barcodeType = barcodeType || product.barcodeType;
       product.isTemplate = false;
       product.status = "ACTIVE";
@@ -199,6 +348,7 @@ export const createProduct = async (req, res) => {
         images,
         barcode,
         manufacturer,
+        weight,
         barcodeType,
         isTemplate: false,
         status: "ACTIVE"
@@ -243,7 +393,7 @@ export const updateProduct = async (req, res) => {
       return res.status(403).json({ success: false, message: "Not authorized to update this product" });
     }
 
-    const { name, description, brand, category, price, stockAvailable, discount, status, deletedImages } = req.body;
+    const { name, description, brand, category, price, stockAvailable, discount, status, deletedImages, weight, manufacturer, barcodeType } = req.body;
     
     // Delete requested images from cloudinary
     if (deletedImages) {
@@ -270,6 +420,9 @@ export const updateProduct = async (req, res) => {
     if (price !== undefined) product.price = Number(price);
     if (stockAvailable !== undefined) product.stockAvailable = Number(stockAvailable);
     if (discount !== undefined) product.discount = Number(discount);
+    if (weight !== undefined) product.weight = weight;
+    if (manufacturer !== undefined) product.manufacturer = manufacturer;
+    if (barcodeType !== undefined) product.barcodeType = barcodeType;
     if (status) product.status = status;
 
     await product.save();

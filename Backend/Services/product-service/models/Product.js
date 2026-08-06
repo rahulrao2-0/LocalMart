@@ -57,6 +57,10 @@ const productSchema = new mongoose.Schema(
     manufacturer: {
       type: String,
     },
+    weight: {
+      type: String,
+      default: "",
+    },
     isTemplate: {
       type: Boolean,
       default: false,

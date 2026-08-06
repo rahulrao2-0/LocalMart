@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const orderItemSchema = new mongoose.Schema({
   productId: { type: String, required: true },
   productName: { type: String, required: true },
+  weight: { type: String, default: "" },
   quantity: { type: Number, required: true, min: [1, "Quantity can not be less than 1."] },
   price: { type: Number, required: true },
   subtotal: { type: Number, required: true },

@@ -10,6 +10,12 @@ const products = [
     category: "Vegetables",
     price: 40,
     stockAvailable: 150,
+    discount: 5,
+    weight: "1 kg",
+    barcode: "8901234567001",
+    barcodeType: "EAN13",
+    manufacturer: "Local Farm Co.",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&q=80",
@@ -29,6 +35,12 @@ const products = [
     category: "Vegetables",
     price: 35,
     stockAvailable: 200,
+    discount: 0,
+    weight: "2 kg",
+    barcode: "8901234567002",
+    barcodeType: "EAN13",
+    manufacturer: "Local Farm Co.",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1518977676601-b144525f1901?w=800&q=80",
@@ -48,6 +60,12 @@ const products = [
     category: "Vegetables",
     price: 60,
     stockAvailable: 120,
+    discount: 10,
+    weight: "500 g",
+    barcode: "8901234567003",
+    barcodeType: "EAN13",
+    manufacturer: "Green Basket Orchards",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=800&q=80",
@@ -71,6 +89,12 @@ const products = [
     category: "Furniture",
     price: 18999,
     stockAvailable: 15,
+    discount: 15,
+    weight: "35 kg",
+    barcode: "8901234567004",
+    barcodeType: "EAN13",
+    manufacturer: "HomeCraft Woods",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=800&q=80",
@@ -90,6 +114,12 @@ const products = [
     category: "Furniture",
     price: 6499,
     stockAvailable: 35,
+    discount: 5,
+    weight: "12 kg",
+    barcode: "8901234567005",
+    barcodeType: "EAN13",
+    manufacturer: "Urban Furniture Ltd",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=800&q=80",
@@ -109,6 +139,12 @@ const products = [
     category: "Furniture",
     price: 24999,
     stockAvailable: 8,
+    discount: 20,
+    weight: "45 kg",
+    barcode: "8901234567006",
+    barcodeType: "EAN13",
+    manufacturer: "SleepWell Mattresses",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=800&q=80",
@@ -132,6 +168,12 @@ const products = [
     category: "Tech & Electronics",
     price: 79999,
     stockAvailable: 20,
+    discount: 0,
+    weight: "170 g",
+    barcode: "8901234567007",
+    barcodeType: "EAN13",
+    manufacturer: "Apple Inc.",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&q=80",
@@ -151,6 +193,12 @@ const products = [
     category: "Tech & Electronics",
     price: 52999,
     stockAvailable: 12,
+    discount: 12,
+    weight: "14 kg",
+    barcode: "8901234567008",
+    barcodeType: "EAN13",
+    manufacturer: "Samsung Electronics",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=800&q=80",
@@ -170,6 +218,12 @@ const products = [
     category: "Tech & Electronics",
     price: 64999,
     stockAvailable: 18,
+    discount: 8,
+    weight: "1.65 kg",
+    barcode: "8901234567009",
+    barcodeType: "EAN13",
+    manufacturer: "Dell Technologies",
+    isTemplate: false,
     images: [
       {
         url: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=800&q=80",

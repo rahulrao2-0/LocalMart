@@ -5,16 +5,39 @@ import { cloudinary } from "../config/cloudinary.js";
 export const getProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
+    const email = req.user.email;
     let profile = await UserProfile.findOne({ userId });
 
+    if (!profile && email) {
+      profile = await UserProfile.findOne({ email });
+      if (profile) {
+        profile.userId = userId;
+        if (req.user.name || req.user.fullName) {
+          profile.fullName = req.user.name || req.user.fullName;
+        }
+        await profile.save();
+      }
+    }
+
     if (!profile) {
-      // Auto-create the profile if it doesn't exist
-      profile = new UserProfile({
-        userId: userId,
-        email: req.user.email || `user_${userId}@localmart.in`,
-        fullName: req.user.name || req.user.fullName || "LocalMart User",
-      });
-      await profile.save();
+      try {
+        profile = new UserProfile({
+          userId: userId,
+          email: email || `user_${userId}@localmart.in`,
+          fullName: req.user.name || req.user.fullName || "LocalMart User",
+        });
+        await profile.save();
+      } catch (saveErr) {
+        if (saveErr.code === 11000) {
+          profile = await UserProfile.findOne({ email: email || `user_${userId}@localmart.in` });
+          if (profile) {
+            profile.userId = userId;
+            await profile.save();
+          }
+        } else {
+          throw saveErr;
+        }
+      }
     }
 
     return res.status(200).json({

@@ -11,6 +11,22 @@ import { setAuthCookies, clearAuthCookies } from "../utils/cookie.js";
 import { createAccessToken, createRefreshToken, verifyAccessToken, verifyRefreshToken } from "../utils/jwt.js";
 import { publishEvent, TOPICS } from "@localmart/shared";
 
+const normalizeRoles = (rolesInput) => {
+  let parsed = rolesInput;
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch (e) {
+      parsed = ["CUSTOMER"];
+    }
+  }
+  if (!Array.isArray(parsed)) {
+    parsed = ["CUSTOMER"];
+  }
+  const cleanRoles = parsed.filter(r => Boolean(r) && r !== "null");
+  return cleanRoles.length > 0 ? cleanRoles : ["CUSTOMER"];
+};
+
 
 
 export const signup = async (req, res) => {
@@ -181,18 +197,7 @@ export const signup = async (req, res) => {
 
     await setAuthCookies(res, accessToken, refreshToken);
 
-    // Publish USER_CREATED Kafka Event immediately upon registration
-    try {
-      await publishEvent(TOPICS.USER_EVENTS, {
-        eventType: "USER_CREATED",
-        userId: userId,
-        email: email,
-        fullName: full_name,
-      });
-      console.log(`📡 Kafka USER_CREATED event published for ${email} on signup`);
-    } catch (kafkaErr) {
-      console.error("❌ Kafka publishing error on signup:", kafkaErr);
-    }
+
 
     return res.status(201).json({
       success: true,
@@ -262,14 +267,8 @@ export const login = async (req, res) => {
       });
     }
 
-    // Parse roles if JSON string
-    if (typeof user.roles === "string") {
-      try {
-        user.roles = JSON.parse(user.roles);
-      } catch (e) {
-        user.roles = ["CUSTOMER"];
-      }
-    }
+    // Sanitize & normalize user roles
+    user.roles = normalizeRoles(user.roles);
 
     // Remove password_hash from response user object
     delete user.password_hash;
@@ -371,13 +370,7 @@ export const refresh = async (req, res) => {
     }
 
     const user = rows[0];
-    if (typeof user.roles === "string") {
-      try {
-        user.roles = JSON.parse(user.roles);
-      } catch (e) {
-        user.roles = ["CUSTOMER"];
-      }
-    }
+    user.roles = normalizeRoles(user.roles);
 
     // Revoke old refresh token (Token rotation)
     await pool.query(
@@ -512,13 +505,7 @@ export const verifyEmail = async (req, res) => {
       console.log("User data after email verification:", userData);
 
       // Parse JSON string array if needed
-      if (typeof userData.roles === "string") {
-        try {
-          userData.roles = JSON.parse(userData.roles);
-        } catch (e) {
-          userData.roles = ["CUSTOMER"];
-        }
-      }
+      userData.roles = normalizeRoles(userData.roles);
       
       // 3. Generate Auth Tokens & Set Cookies
       const payload = {
@@ -590,13 +577,7 @@ export const me = async (req, res) => {
     }
 
     const user = rows[0];
-    if (typeof user.roles === "string") {
-      try {
-        user.roles = JSON.parse(user.roles);
-      } catch (e) {
-        user.roles = ["CUSTOMER"];
-      }
-    }
+    user.roles = normalizeRoles(user.roles);
 
     return res.status(200).json({
       success: true,
@@ -760,25 +741,7 @@ export const sellerSignup = async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await pool.query(`INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)`, [tokenId, userId, tokenHash, expiresAt]);
 
-    // Publish SELLER_CREATED Kafka Event for User Service
-    try {
-      console.log("Publishing SELLER_CREATED event to Kafka...");
-      await publishEvent(TOPICS.USER_EVENTS, {
-        eventType: "SELLER_CREATED",
-        userId: userId,
-        email: email,
-        fullName: full_name,
-        businessName: req.body.businessName,
-        ownerName: req.body.ownerName,
-        phone: req.body.phone,
-        businessType: req.body.businessType,
-        gstNumber: req.body.gstNumber,
-        panNumber: req.body.panNumber,
-      });
-      console.log(`📡 Kafka SELLER_CREATED event published successfully for ${email}`);
-    } catch (kafkaErr) {
-      console.error("❌ Kafka publishing error:", kafkaErr);
-    }
+
 
     await setAuthCookies(res, accessToken, refreshToken);
     return res.status(201).json({
