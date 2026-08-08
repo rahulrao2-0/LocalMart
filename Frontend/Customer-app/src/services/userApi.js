@@ -4,8 +4,6 @@ import { apiRequest } from "./api.js";
 export const getProfileApi = async () => {
   return await apiRequest("/users/profile", { method: "GET" });
 };
-
-// Update personal profile information (fullName, phone, bio)
 export const updateProfileApi = async (profileData) => {
   return await apiRequest("/users/profile", {
     method: "PUT",
