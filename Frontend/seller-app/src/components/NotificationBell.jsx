@@ -28,20 +28,27 @@ export default function NotificationBell() {
 
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`http://localhost:5003/api/notifications`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const headers = {};
+        if (token && token !== "undefined" && token !== "null") {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`http://localhost:3000/api/v1/notifications?userId=${userId}&unreadOnly=true`, {
+          credentials: 'include',
+          headers
         });
         const data = await res.json();
-        if (data.success) {
-          setNotifications(data.data);
+        if (data && data.success) {
+          setNotifications(data.data || []);
         }
         
-        const countRes = await fetch(`http://localhost:5003/api/notifications/unread`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const countRes = await fetch(`http://localhost:3000/api/v1/notifications/unread?userId=${userId}`, {
+          credentials: 'include',
+          headers
         });
         const countData = await countRes.json();
-        if (countData.success) {
-          setUnreadCount(countData.count);
+        if (countData && countData.success) {
+          setUnreadCount(countData.count || 0);
         }
       } catch (error) {
         console.error("Failed to fetch notifications", error);
@@ -68,14 +75,21 @@ export default function NotificationBell() {
 
   const markAllAsRead = async () => {
     try {
-      await fetch(`http://localhost:5003/api/notifications/read-all`, {
+      const userId = user?.id || user?._id;
+      const headers = {};
+      if (token && token !== "undefined" && token !== "null") {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      await fetch(`http://localhost:3000/api/v1/notifications/read-all?userId=${userId}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
+        credentials: 'include',
+        headers
       });
       setUnreadCount(0);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications([]);
     } catch (error) {
-      console.error(error);
+      console.error("Error marking notifications as read:", error);
     }
   };
 
@@ -92,31 +106,34 @@ export default function NotificationBell() {
         open={Boolean(anchorEl)}
         onClose={handleClose}
         PaperProps={{
-          sx: { width: 320, maxHeight: 400, borderRadius: 3, mt: 1, boxShadow: '0px 10px 30px rgba(0,0,0,0.15)' }
+          sx: { width: 340, maxHeight: 420, borderRadius: 3, mt: 1, boxShadow: '0px 10px 30px rgba(0,0,0,0.15)' }
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">Notifications</Typography>
+          <Typography variant="subtitle1" fontWeight="bold">New Notifications</Typography>
           {unreadCount > 0 && (
-            <Button size="small" onClick={markAllAsRead} sx={{ textTransform: 'none' }}>
-              Mark all as read
+            <Button size="small" onClick={markAllAsRead} sx={{ textTransform: 'none', fontWeight: 700 }}>
+              Clear All
             </Button>
           )}
         </Box>
         <Divider />
         {notifications.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">No notifications</Typography>
+            <Typography variant="body2" color="text.secondary">No new notifications</Typography>
           </Box>
         ) : (
           notifications.map(notif => (
-            <MenuItem key={notif._id} sx={{ whiteSpace: 'normal', bgcolor: notif.isRead ? 'transparent' : 'action.hover' }}>
+            <MenuItem key={notif._id} sx={{ whiteSpace: 'normal', bgcolor: 'action.hover', py: 1.5 }}>
               <Box>
-                <Typography variant="subtitle2" fontWeight={notif.isRead ? 'normal' : 'bold'}>
+                <Typography variant="subtitle2" fontWeight="bold" color="primary.main">
                   {notif.title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   {notif.message}
+                </Typography>
+                <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5 }}>
+                  {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Typography>
               </Box>
             </MenuItem>

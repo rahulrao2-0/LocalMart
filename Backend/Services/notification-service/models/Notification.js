@@ -7,7 +7,7 @@ const notificationSchema = new mongoose.Schema({
   message: { type: String, required: true },
   type: {
     type: String,
-    enum: ['PAYMENT_FAILED', 'REVIEW_RECEIVED', 'DELIVERY_ASSIGNED', 'DELIVERY_COMPLETED'],
+    enum: ['ORDER_CREATED', 'ORDER_CONFIRMED', 'ORDER_CANCELLED', 'ORDER_STATUS_UPDATED', 'PAYMENT_FAILED', 'REVIEW_RECEIVED', 'DELIVERY_ASSIGNED', 'DELIVERY_COMPLETED'],
     required: true,
   },
   metadata: { type: mongoose.Schema.Types.Mixed, default: {} },

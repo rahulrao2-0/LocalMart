@@ -29,8 +29,12 @@ class NotificationService {
         }
     }
 
-    async getUserNotifications(userId, limit = 20, skip = 0) {
-        return await Notification.find({ userId })
+    async getUserNotifications(userId, limit = 20, skip = 0, unreadOnly = false) {
+        const query = { userId };
+        if (unreadOnly) {
+            query.isRead = false;
+        }
+        return await Notification.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);

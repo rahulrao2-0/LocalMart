@@ -1,24 +1,6 @@
 import { kafka, TOPICS } from '@localmart/shared';
 import notificationService from '../services/notification.service.js';
 
-// Helper to fetch user email internally from user-service
-const fetchUserProfile = async (userId) => {
-  console.log(`[NOTIFICATION SERVICE] Fetching profile internally for user ID: ${userId}`);
-  try {
-    const res = await fetch(`http://localhost:3002/api/v1/users/internal/${userId}`);
-    if (!res.ok) {
-      console.error(`[NOTIFICATION SERVICE] Failed to fetch profile for user ${userId}. Status: ${res.status}`);
-      return null;
-    }
-    const data = await res.json();
-    console.log(`[NOTIFICATION SERVICE] Profile fetched successfully for ${userId}:`, data.profile?.email);
-    return data.profile;
-  } catch (err) {
-    console.error(`[NOTIFICATION SERVICE] Error fetching user profile for ${userId}:`, err.message);
-    return null;
-  }
-};
-
 export const startConsumer = async () => {
   try {
     const consumer = kafka.consumer({ groupId: 'notification-group' });
@@ -48,14 +30,12 @@ export const startConsumer = async () => {
             }
 
             const { _id: orderId, orderNumber, customerId, sellerId, totalAmount } = order;
+            const customerEmail = order.shippingAddress?.email || order.email || order.customerEmail;
 
             if (event.type === "ORDER_CREATED") {
               console.log(`📦 [ORDER_CREATED] Order ${orderNumber} created. Notifying customer and seller.`);
               
-              // Get Customer email to send notification
-              const customerProfile = await fetchUserProfile(customerId);
-              
-              // Notify Customer (DB + Email)
+              // Notify Customer (DB + Email via Brevo)
               await notificationService.createNotification({
                 userId: customerId,
                 role: "CUSTOMER",
@@ -63,10 +43,10 @@ export const startConsumer = async () => {
                 message: `Your order #${orderNumber} of ₹${totalAmount} has been placed successfully.`,
                 type: "ORDER_CREATED",
                 metadata: { orderId, orderNumber },
-                userEmail: customerProfile?.email
+                userEmail: customerEmail
               });
 
-              // Notify Seller (DB only / Live Socket)
+              // Notify Seller (DB + Live Socket)
               await notificationService.createNotification({
                 userId: sellerId,
                 role: "SELLER",
@@ -80,17 +60,15 @@ export const startConsumer = async () => {
             else if (event.type === "ORDER_CONFIRMED") {
               console.log(`✅ [ORDER_CONFIRMED] Order ${orderNumber} confirmed. Sending confirmation email.`);
               
-              const customerProfile = await fetchUserProfile(customerId);
-              
-              // Notify Customer (DB + Email)
+              // Notify Customer (DB + Confirmation Email via Brevo)
               await notificationService.createNotification({
                 userId: customerId,
                 role: "CUSTOMER",
                 title: "Order Confirmed!",
-                message: `Great news! Your order #${orderNumber} has been confirmed.`,
+                message: `Great news! Your order #${orderNumber} of ₹${totalAmount} has been confirmed.`,
                 type: "ORDER_CONFIRMED",
                 metadata: { orderId, orderNumber },
-                userEmail: customerProfile?.email
+                userEmail: customerEmail
               });
 
               // Notify Seller
@@ -107,8 +85,6 @@ export const startConsumer = async () => {
             else if (event.type === "ORDER_CANCELLED") {
               console.log(`❌ [ORDER_CANCELLED] Order ${orderNumber} cancelled.`);
               
-              const customerProfile = await fetchUserProfile(customerId);
-              
               await notificationService.createNotification({
                 userId: customerId,
                 role: "CUSTOMER",
@@ -116,7 +92,7 @@ export const startConsumer = async () => {
                 message: `Your order #${orderNumber} has been cancelled.`,
                 type: "ORDER_CANCELLED",
                 metadata: { orderId, orderNumber },
-                userEmail: customerProfile?.email
+                userEmail: customerEmail
               });
 
               await notificationService.createNotification({
@@ -126,6 +102,30 @@ export const startConsumer = async () => {
                 message: `Order #${orderNumber} was cancelled.`,
                 type: "ORDER_CANCELLED",
                 metadata: { orderId, orderNumber }
+              });
+            }
+
+            else if (event.type === "ORDER_STATUS_UPDATED") {
+              const newStatus = order.orderStatus || order.status;
+              console.log(`🔄 [ORDER_STATUS_UPDATED] Order ${orderNumber} status changed to ${newStatus}.`);
+
+              await notificationService.createNotification({
+                userId: customerId,
+                role: "CUSTOMER",
+                title: `Order Status: ${newStatus}`,
+                message: `Your order #${orderNumber} is now ${newStatus}.`,
+                type: "ORDER_STATUS_UPDATED",
+                metadata: { orderId, orderNumber, newStatus },
+                userEmail: customerEmail
+              });
+
+              await notificationService.createNotification({
+                userId: sellerId,
+                role: "SELLER",
+                title: "Order Status Updated",
+                message: `Order #${orderNumber} status was updated to ${newStatus}.`,
+                type: "ORDER_STATUS_UPDATED",
+                metadata: { orderId, orderNumber, newStatus }
               });
             }
           }
@@ -140,7 +140,7 @@ export const startConsumer = async () => {
             if (event.type === "PAYMENT_FAILED") {
               console.log(`❌ [PAYMENT_FAILED] Payment failed for order ${orderId}. Reason: ${reason}`);
               
-              const customerProfile = await fetchUserProfile(customerId);
+              const customerEmail = payment.email || payment.customerEmail;
               
               await notificationService.createNotification({
                 userId: customerId,
@@ -149,7 +149,7 @@ export const startConsumer = async () => {
                 message: `Your payment of ₹${amount} failed. Reason: ${reason || 'Unknown'}`,
                 type: "PAYMENT_FAILED",
                 metadata: { orderId },
-                userEmail: customerProfile?.email
+                userEmail: customerEmail
               });
             }
           }

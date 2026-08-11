@@ -47,6 +47,20 @@ class TemplateService {
                     </div>
                 `;
                 break;
+            case 'ORDER_STATUS_UPDATED':
+                subject = `Order Update: ${data.title || "Status Updated"} - LocalMart`;
+                htmlContent = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px;">
+                        <h2 style="color: #2196f3;">📦 Order Update</h2>
+                        <p>Hi,</p>
+                        <p>${data.message}</p>
+                        <blockquote style="background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;">
+                            <strong>Status:</strong> ${data.metadata?.newStatus || 'Updated'}
+                        </blockquote>
+                        <p>Thank you for shopping with LocalMart!</p>
+                    </div>
+                `;
+                break;
             case 'PAYMENT_FAILED':
                 subject = "Payment Failed - LocalMart";
                 htmlContent = `<h1>Payment Failed</h1><p>Dear user, your payment failed. Please try again. Details: ${data.message}</p>`;

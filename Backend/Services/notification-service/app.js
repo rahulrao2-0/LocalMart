@@ -8,6 +8,8 @@ import { errorHandler } from './utils/errorHandler.js';
 import { init as initSocket } from './services/socket.service.js';
 import { startConsumer } from './kafka/consumer.js';
 
+import cookieParser from 'cookie-parser';
+
 dotenv.config();
 
 const app = express();
@@ -35,7 +37,11 @@ const startServer = async () => {
 
 startServer();
 
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -77,6 +77,16 @@ app.use(
   })
 );
 
+// Proxy for notification API endpoints (/api/v1/notifications)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/notifications",
+    target: "http://localhost:5003",
+    changeOrigin: true,
+    pathRewrite: { "^/api/v1": "/api" },
+  })
+);
+
 // Proxy for cart API endpoints (/api/v1/cart)
 app.use(
   createProxyMiddleware({

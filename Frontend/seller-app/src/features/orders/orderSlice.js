@@ -16,11 +16,12 @@ export const fetchOrders = createAsyncThunk(
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
-  async ({ orderId, status }, { rejectWithValue }) => {
+  async ({ orderId, status, reason }, { rejectWithValue }) => {
     try {
-      const response = await apiFetch(`/orders/${orderId}/status`, {
+      const endpoint = status === "CANCELLED" ? `/orders/${orderId}/cancel` : `/orders/${orderId}/status`;
+      const response = await apiFetch(endpoint, {
         method: 'PUT',
-        body: JSON.stringify({ orderStatus: status, status }),
+        body: JSON.stringify({ orderStatus: status, status, reason }),
       });
       return response?.data || response;
     } catch (error) {
@@ -52,9 +53,11 @@ const orderSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        const index = state.items.findIndex(o => o.id === action.payload.id || o._id === action.payload._id);
+        const updated = action.payload;
+        if (!updated) return;
+        const index = state.items.findIndex(o => (o.id || o._id) === (updated.id || updated._id));
         if (index !== -1) {
-          state.items[index] = action.payload;
+          state.items[index] = updated;
         }
       });
   },

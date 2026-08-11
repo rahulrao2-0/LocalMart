@@ -292,7 +292,7 @@ const Dashboard = () => {
           <Paper sx={{ ...glassStyle, p: 4, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 800 }}>Recent Orders</Typography>
-              <IconButton size="small" onClick={() => navigate('/orders')}><MoreVertIcon /></IconButton>
+              <IconButton size="small" onClick={() => navigate('/dashboard/orders')}><MoreVertIcon /></IconButton>
             </Box>
             
             {ordersLoading ? (
@@ -367,7 +367,7 @@ const Dashboard = () => {
             )}
             
             <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha('#000', 0.1), textAlign: 'center' }}>
-              <Button color="primary" onClick={() => navigate('/orders')} sx={{ fontWeight: 'bold', textTransform: 'none' }}>
+              <Button color="primary" onClick={() => navigate('/dashboard/orders')} sx={{ fontWeight: 'bold', textTransform: 'none' }}>
                 View All Orders
               </Button>
             </Box>
