@@ -43,8 +43,11 @@ export default function CategorySection({
             const isOpen = backendProduct.status !== "INACTIVE";
             const distanceKm = Math.floor(Math.random() * 5) + 1;
             
+            const sellerId = backendProduct.sellerId || backendProduct.seller_id || "seller-001";
+            
             return {
               id: backendProduct._id,
+              sellerId: sellerId,
               name: backendProduct.name,
               category: backendProduct.category || "General",
               rating: backendProduct.rating || 4.5,
@@ -55,7 +58,7 @@ export default function CategorySection({
               distanceKm: distanceKm,
               isOpen: isOpen,
               shopCount: 1,
-              shops: [{ shopName, price, distanceKm, isOpen, rating: 4.5 }],
+              shops: [{ shopName, price, distanceKm, isOpen, rating: 4.5, sellerId: sellerId }],
               images: backendProduct.images || [],
             };
           });

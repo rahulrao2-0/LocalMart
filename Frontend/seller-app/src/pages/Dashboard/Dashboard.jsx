@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { 
   Grid, Typography, Box, Card, CardContent, Avatar, 
-  Paper, Chip, IconButton, Button, useTheme, alpha 
+  Paper, Chip, IconButton, Button, useTheme, alpha, CircularProgress 
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -12,6 +14,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddIcon from '@mui/icons-material/Add';
+import { fetchOrders } from '../../features/orders/orderSlice';
 
 const StatCard = ({ title, value, icon, gradient, trend, trendValue }) => {
   const theme = useTheme();
@@ -104,26 +107,45 @@ const StatCard = ({ title, value, icon, gradient, trend, trendValue }) => {
   );
 };
 
-const recentOrders = [
-  { id: '#ORD-7829', customer: 'Alice Cooper', amount: 120.50, status: 'Processing', date: 'Just now' },
-  { id: '#ORD-7828', customer: 'Marcus Levin', amount: 84.00, status: 'Shipped', date: '2 hours ago' },
-  { id: '#ORD-7827', customer: 'Sarah Jenkins', amount: 210.25, status: 'Delivered', date: '5 hours ago' },
-  { id: '#ORD-7826', customer: 'David Smith', amount: 45.90, status: 'Processing', date: '1 day ago' },
-  { id: '#ORD-7825', customer: 'Emma Watson', amount: 330.00, status: 'Delivered', date: '2 days ago' },
-];
-
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'Processing': return 'warning';
-    case 'Shipped': return 'info';
-    case 'Delivered': return 'success';
+  switch (status?.toUpperCase()) {
+    case 'PENDING':
+    case 'PROCESSING': return 'warning';
+    case 'CONFIRMED':
+    case 'SHIPPED':
+    case 'OUT_FOR_DELIVERY': return 'info';
+    case 'DELIVERED': return 'success';
+    case 'CANCELLED': return 'error';
     default: return 'default';
   }
 };
 
 const Dashboard = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const isDark = theme.palette.mode === 'dark';
+
+  const { user } = useSelector((state) => state.auth);
+  const { items: orders = [], loading: ordersLoading } = useSelector((state) => state.orders);
+
+  const sellerId = user?.id || user?._id || user?.sellerId || "seller-001";
+
+  useEffect(() => {
+    if (sellerId) {
+      dispatch(fetchOrders(sellerId));
+    }
+  }, [dispatch, sellerId]);
+
+  // Calculate dynamic stats
+  const totalRevenue = orders.reduce((sum, order) => {
+    if (order.orderStatus !== 'CANCELLED' && (order.paymentStatus === 'COMPLETED' || order.orderStatus === 'CONFIRMED' || order.orderStatus === 'DELIVERED')) {
+      return sum + (Number(order.totalAmount) || 0);
+    }
+    return sum;
+  }, 0);
+
+  const pendingOrdersCount = orders.filter(o => o.orderStatus === 'PENDING' || o.orderStatus === 'PROCESSING').length;
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', month: 'long', day: 'numeric' 
@@ -190,7 +212,7 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Total Revenue" 
-            value="$24,500" 
+            value={`₹${totalRevenue.toLocaleString()}`} 
             icon={<AccountBalanceWalletIcon />} 
             gradient="linear-gradient(135deg, #10B981 0%, #059669 100%)" 
             trend="up"
@@ -200,7 +222,7 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Pending Orders" 
-            value="45" 
+            value={pendingOrdersCount.toString()} 
             icon={<LocalShippingIcon />} 
             gradient="linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" 
             trend="up"
@@ -209,8 +231,8 @@ const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Active Products" 
-            value="128" 
+            title="Total Orders" 
+            value={orders.length.toString()} 
             icon={<Inventory2Icon />} 
             gradient="linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)" 
             trend="up"
@@ -270,64 +292,82 @@ const Dashboard = () => {
           <Paper sx={{ ...glassStyle, p: 4, height: '100%' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6" sx={{ fontWeight: 800 }}>Recent Orders</Typography>
-              <IconButton size="small"><MoreVertIcon /></IconButton>
+              <IconButton size="small" onClick={() => navigate('/orders')}><MoreVertIcon /></IconButton>
             </Box>
             
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {recentOrders.map((order) => (
-                <Box 
-                  key={order.id} 
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    p: 2, 
-                    borderRadius: 3, 
-                    bgcolor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha('#000', 0.02),
-                    border: '1px solid',
-                    borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha('#000', 0.03),
-                    transition: 'all 0.2s ease',
-                    '&:hover': { 
-                      bgcolor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha('#000', 0.04), 
-                      transform: 'translateX(4px)' 
-                    }
-                  }}
-                >
-                  <Avatar sx={{ 
-                    bgcolor: alpha(theme.palette[getStatusColor(order.status)].main, 0.15), 
-                    color: theme.palette[getStatusColor(order.status)].main, 
-                    mr: 2, 
-                    width: 44, 
-                    height: 44, 
-                    fontWeight: 'bold' 
-                  }}>
-                    {order.customer.charAt(0)}
-                  </Avatar>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 700 }}>
-                      {order.customer}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
-                      {order.id} • {order.date}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
-                      ${order.amount.toFixed(2)}
-                    </Typography>
-                    <Chip 
-                      size="small" 
-                      label={order.status} 
-                      color={getStatusColor(order.status)}
-                      variant={isDark ? "outlined" : "filled"}
-                      sx={{ height: 22, fontSize: '0.65rem', mt: 0.5, fontWeight: 'bold', borderRadius: 1 }}
-                    />
-                  </Box>
-                </Box>
-              ))}
-            </Box>
+            {ordersLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                <CircularProgress size={32} />
+              </Box>
+            ) : orders.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body2" color="text.secondary">No orders received yet.</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {orders.slice(0, 5).map((order) => {
+                  const orderNum = order.orderNumber || `#${(order._id || order.id || '').substring(0, 8).toUpperCase()}`;
+                  const amount = Number(order.totalAmount || 0);
+                  const statusStr = order.orderStatus || order.status || 'PENDING';
+                  const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently';
+                  const customerName = order.customer?.name || order.customer?.fullName || order.shippingAddress?.fullName || order.shippingAddress?.name || order.customerName || 'Customer';
+
+                  return (
+                    <Box 
+                      key={order._id || order.id} 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        p: 2, 
+                        borderRadius: 3, 
+                        bgcolor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha('#000', 0.02),
+                        border: '1px solid',
+                        borderColor: isDark ? alpha(theme.palette.common.white, 0.05) : alpha('#000', 0.03),
+                        transition: 'all 0.2s ease',
+                        '&:hover': { 
+                          bgcolor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha('#000', 0.04), 
+                          transform: 'translateX(4px)' 
+                        }
+                      }}
+                    >
+                      <Avatar sx={{ 
+                        bgcolor: alpha(theme.palette[getStatusColor(statusStr)]?.main || theme.palette.primary.main, 0.15), 
+                        color: theme.palette[getStatusColor(statusStr)]?.main || theme.palette.primary.main, 
+                        mr: 2, 
+                        width: 44, 
+                        height: 44, 
+                        fontWeight: 'bold' 
+                      }}>
+                        {customerName.charAt(0)}
+                      </Avatar>
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="subtitle2" color="text.primary" sx={{ fontWeight: 700 }}>
+                          {customerName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+                          {orderNum} • {dateStr}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                          ₹{amount.toFixed(2)}
+                        </Typography>
+                        <Chip 
+                          size="small" 
+                          label={statusStr} 
+                          color={getStatusColor(statusStr)}
+                          variant={isDark ? "outlined" : "filled"}
+                          sx={{ height: 22, fontSize: '0.65rem', mt: 0.5, fontWeight: 'bold', borderRadius: 1 }}
+                        />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
             
             <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid', borderColor: isDark ? alpha(theme.palette.common.white, 0.1) : alpha('#000', 0.1), textAlign: 'center' }}>
-              <Button color="primary" sx={{ fontWeight: 'bold', textTransform: 'none' }}>
+              <Button color="primary" onClick={() => navigate('/orders')} sx={{ fontWeight: 'bold', textTransform: 'none' }}>
                 View All Orders
               </Button>
             </Box>

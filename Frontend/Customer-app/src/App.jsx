@@ -23,8 +23,8 @@ function App() {
   // Shared Cart State across application
   const [cart, setCart] = useState([
     {
-      product: { id: "v1", name: "Onions 1kg", brand: "Fresh Farm", category: "Vegetables" },
-      shop: { shopName: "Shree Grocery Mart", price: 32, distanceKm: 0.6 },
+      product: { id: "v1", name: "Onions 1kg", brand: "Fresh Farm", category: "Vegetables", sellerId: "seller-001" },
+      shop: { shopName: "Shree Grocery Mart", price: 32, distanceKm: 0.6, sellerId: "seller-001" },
       quantity: 2,
       fulfillmentMode: "delivery",
     },

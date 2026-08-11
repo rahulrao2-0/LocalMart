@@ -60,8 +60,11 @@ export default function ProductDetailPage({ onAddToCart, themeMode }) {
           const isOpen = data.status !== "INACTIVE";
           const distanceKm = Math.floor(Math.random() * 4) + 1;
 
+          const sellerId = data.sellerId || data.seller_id || "seller-001";
+
           const mappedProduct = {
             id: data._id,
+            sellerId: sellerId,
             name: data.name,
             category: data.category || "General",
             rating: data.rating || 4.7,
@@ -72,7 +75,7 @@ export default function ProductDetailPage({ onAddToCart, themeMode }) {
             distanceKm: distanceKm,
             isOpen: isOpen,
             shopCount: 1,
-            shops: [{ shopName, price, distanceKm, isOpen, rating: 4.8, address: "City Center Hub" }],
+            shops: [{ shopName, price, distanceKm, isOpen, rating: 4.8, address: "City Center Hub", sellerId: sellerId }],
             images: data.images && data.images.length > 0 ? data.images : [],
             about: data.description || "Discover premium quality with this locally sourced item. Built to last and sourced directly from nearby vendors to ensure you get the best value and authenticity.",
             stockAvailable: data.stockAvailable || 10,

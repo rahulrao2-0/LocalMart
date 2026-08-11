@@ -19,11 +19,16 @@ const statusColors = {
 
 const OrdersList = () => {
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const { items, loading } = useSelector((state) => state.orders);
 
+  const sellerId = user?.id || user?._id || user?.sellerId || "seller-001";
+
   useEffect(() => {
-    dispatch(fetchOrders());
-  }, [dispatch]);
+    if (sellerId) {
+      dispatch(fetchOrders(sellerId));
+    }
+  }, [dispatch, sellerId]);
 
   const handleStatusChange = (orderId, newStatus) => {
     dispatch(updateOrderStatus({ orderId, status: newStatus }));
@@ -74,37 +79,42 @@ const OrdersList = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {items.map((order) => (
-                <TableRow key={order.id || order._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 }, transition: '0.2s', '&:hover': { bgcolor: 'grey.50' } }}>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ bgcolor: 'primary.50', color: 'primary.main', borderRadius: 2 }}>
-                        <ReceiptLongIcon />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                          #{(order.id || order._id).substring(0, 8).toUpperCase()}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Standard Delivery
-                        </Typography>
+              {items.map((order) => {
+                const customerName = order.customer?.name || order.customer?.fullName || order.shippingAddress?.fullName || order.shippingAddress?.name || order.customerName || 'Customer';
+                const customerEmail = order.customer?.email || order.shippingAddress?.email || 'N/A';
+                const orderNum = order.orderNumber || `#${(order.id || order._id).substring(0, 8).toUpperCase()}`;
+
+                return (
+                  <TableRow key={order.id || order._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 }, transition: '0.2s', '&:hover': { bgcolor: 'grey.50' } }}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: 'primary.50', color: 'primary.main', borderRadius: 2 }}>
+                          <ReceiptLongIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                            {orderNum}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Standard Delivery
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{order.customer?.name || 'Guest User'}</Typography>
-                    <Typography variant="caption" color="text.secondary">{order.customer?.email || 'N/A'}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="subtitle1" color="primary.main" sx={{ fontWeight: 'bold' }}>
-                      ${parseFloat(order.totalAmount).toFixed(2)}
-                    </Typography>
-                  </TableCell>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{customerName}</Typography>
+                      <Typography variant="caption" color="text.secondary">{customerEmail}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="subtitle1" color="primary.main" sx={{ fontWeight: 'bold' }}>
+                        ₹{parseFloat(order.totalAmount || 0).toFixed(2)}
+                      </Typography>
+                    </TableCell>
                   <TableCell align="center">
                     <Chip 
                       label={order.status} 
@@ -134,7 +144,8 @@ const OrdersList = () => {
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               {items.length === 0 && !loading && (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 6 }}>

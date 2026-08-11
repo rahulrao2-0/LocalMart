@@ -3,10 +3,11 @@ import { apiFetch } from '../../utils/api';
 
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async (_, { rejectWithValue }) => {
+  async (sellerId, { rejectWithValue }) => {
     try {
-      const data = await apiFetch('/orders/seller');
-      return data;
+      const endpoint = sellerId ? `/orders/seller/${sellerId}` : '/orders/seller';
+      const response = await apiFetch(endpoint);
+      return response?.data || response || [];
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -17,11 +18,11 @@ export const updateOrderStatus = createAsyncThunk(
   'orders/updateOrderStatus',
   async ({ orderId, status }, { rejectWithValue }) => {
     try {
-      const data = await apiFetch(`/orders/${orderId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
+      const response = await apiFetch(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ orderStatus: status, status }),
       });
-      return data; // assuming API returns updated order
+      return response?.data || response;
     } catch (error) {
       return rejectWithValue(error.message);
     }

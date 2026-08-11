@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { v4 as uuidv4 } from "uuid";
 import {
   Box,
   Container,
@@ -48,9 +50,21 @@ import {
   ConfirmationNumberOutlined
 } from "@mui/icons-material";
 
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart, onClearCart, themeMode }) {
   const theme = useTheme();
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
 
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [promoCode, setPromoCode] = useState("");
@@ -90,24 +104,154 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
     }
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (!cart || cart.length === 0) {
+      setPromoError("Your cart is empty.");
+      return;
+    }
+
     setIsCheckingOut(true);
-    setTimeout(() => {
-      setIsCheckingOut(false);
-      setOrderDetails({
-        orderId: `LM-${Math.floor(100000 + Math.random() * 900000)}`,
-        items: cart,
-        subtotal,
-        deliveryFee,
-        packagingFee,
-        discount,
-        totalPayable,
-        deliveryMethod,
-        date: new Date().toLocaleDateString(),
+    setPromoError("");
+    setPromoSuccess("");
+
+    try {
+      const idempotencyKey = uuidv4();
+
+      const itemsPayload = cart.map((item) => ({
+        productId: item.product?.id || item.product?._id || "p1",
+        productName: item.product?.name || "Product",
+        quantity: item.quantity,
+        price: item.shop?.price || item.product?.price || 0,
+        subtotal: (item.shop?.price || item.product?.price || 0) * item.quantity,
+      }));
+
+      const primarySellerId =
+        cart[0]?.shop?.sellerId ||
+        cart[0]?.shop?.seller_id ||
+        cart[0]?.product?.sellerId ||
+        cart[0]?.product?.seller_id ||
+        cart[0]?.sellerId ||
+        cart[0]?.seller_id ||
+        cart[0]?.shop?.id ||
+        "dummy_seller_id";
+
+      const customerName = user?.fullName || user?.full_name || user?.username || user?.name || "Customer";
+      const customerEmail = user?.email || "";
+
+      const defaultAddress = {
+        fullName: customerName,
+        name: customerName,
+        email: customerEmail,
+        street: user?.addresses?.[0]?.street || user?.address || "123 Local Street",
+        city: user?.addresses?.[0]?.city || user?.location || "Local City",
+        postalCode: user?.addresses?.[0]?.postalCode || "400001",
+        country: user?.addresses?.[0]?.country || "IN",
+      };
+
+      // 1. Create Order in Backend via API Gateway (Port 3000)
+      const orderRes = await fetch("http://localhost:3000/api/v1/orders/", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-idempotency-key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          totalAmount: totalPayable,
+          customerId: user?.id || user?._id || "guest_user",
+          sellerId: primarySellerId,
+          items: itemsPayload,
+          shippingAddress: defaultAddress,
+          subtotal,
+          deliveryCharge: deliveryFee,
+          discount,
+          paymentMethod: "RAZORPAY",
+        }),
       });
-      setOrderComplete(true);
-      if (onClearCart) onClearCart();
-    }, 1200);
+
+      const orderData = await orderRes.json();
+      if (!orderRes.ok || !orderData.success) {
+        throw new Error(orderData.message || "Failed to create order");
+      }
+
+      // 2. Ensure Razorpay SDK is loaded
+      const sdkLoaded = await loadRazorpay();
+      if (!sdkLoaded) throw new Error("Could not load Razorpay SDK. Please check your internet connection.");
+
+      // 3. Configure Razorpay popup options
+      const paymentInfo = orderData.payment || {};
+      const createdOrderData = orderData.data || {};
+
+      const options = {
+        key: paymentInfo.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: paymentInfo.amount || totalPayable * 100,
+        currency: paymentInfo.currency || "INR",
+        name: "LocalMart",
+        description: `Order ${createdOrderData.orderNumber || ''}`,
+        order_id: paymentInfo.razorpayOrderId,
+        prefill: {
+          name: user?.fullName || user?.full_name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        theme: { color: "#3B82F6" },
+
+        handler: async (response) => {
+          try {
+            const verifyRes = await fetch("http://localhost:3000/api/v1/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              setOrderDetails({
+                orderId: createdOrderData.orderNumber || `LM-${Math.floor(100000 + Math.random() * 900000)}`,
+                items: cart,
+                subtotal,
+                deliveryFee,
+                packagingFee,
+                discount,
+                totalPayable,
+                deliveryMethod,
+                date: new Date().toLocaleDateString(),
+              });
+              setOrderComplete(true);
+              if (onClearCart) onClearCart();
+            } else {
+              setPromoError("Payment verification failed. Please contact support.");
+            }
+          } catch (err) {
+            setPromoError(err.message || "Payment verification failed.");
+          } finally {
+            setIsCheckingOut(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsCheckingOut(false);
+          },
+        },
+      };
+
+      // 4. Open Modal
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        setPromoError(`Payment Failed: ${response.error?.description || "Unknown error"}`);
+        setIsCheckingOut(false);
+      });
+
+      rzp.open();
+    } catch (error) {
+      console.error("Order processing error:", error);
+      setPromoError(error.message || "Something went wrong initiating checkout.");
+      setIsCheckingOut(false);
+    }
   };
 
   const isDark = theme.palette.mode === "dark";
