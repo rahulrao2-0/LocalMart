@@ -207,6 +207,56 @@ const fetchFromExternalBarcodeApis = async (barcode) => {
     console.log("⚠️ [API 4] OpenBeautyFacts failed or timed out:", err.message);
   }
 
+  // 5. Google Books API (Books, Textbooks, Novels, Magazines by ISBN/Barcode)
+  try {
+    console.log(`🔍 [API 5] Querying Google Books for ISBN/barcode: ${barcode}...`);
+    const res5 = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${barcode}`, { signal: AbortSignal.timeout(3000) });
+    const data5 = await res5.json();
+    if (data5 && data5.items && data5.items.length > 0 && data5.items[0].volumeInfo) {
+      const info = data5.items[0].volumeInfo;
+      const authors = info.authors ? info.authors.join(", ") : "Unknown Author";
+      const img = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "";
+      console.log(`✅ [API 5 MATCH] Google Books found book: ${info.title} by ${authors}`);
+      return {
+        name: info.title,
+        brand: authors,
+        category: info.categories ? info.categories[0] : "Books",
+        description: info.description || `Book by ${authors}. Published by ${info.publisher || 'Unknown'}. Pages: ${info.pageCount || 'N/A'}.`,
+        manufacturer: info.publisher || "Publisher Unknown",
+        weight: info.pageCount ? `${info.pageCount} pages` : "",
+        images: img ? [{ url: img.replace("http://", "https://"), public_id: "external_gbooks" }] : []
+      };
+    }
+  } catch (err) {
+    console.log("⚠️ [API 5] Google Books API failed or timed out:", err.message);
+  }
+
+  // 6. Open Library Books API (Books Fallback)
+  try {
+    console.log(`🔍 [API 6] Querying OpenLibrary for ISBN/barcode: ${barcode}...`);
+    const res6 = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${barcode}&format=json&jscmd=data`, { signal: AbortSignal.timeout(3000) });
+    const data6 = await res6.json();
+    const key = `ISBN:${barcode}`;
+    if (data6 && data6[key] && data6[key].title) {
+      const book = data6[key];
+      const authors = book.authors ? book.authors.map(a => a.name).join(", ") : "Unknown Author";
+      const publishers = book.publishers ? book.publishers.map(p => p.name).join(", ") : "Unknown Publisher";
+      const coverUrl = book.cover?.large || book.cover?.medium || book.cover?.small || "";
+      console.log(`✅ [API 6 MATCH] OpenLibrary found book: ${book.title} by ${authors}`);
+      return {
+        name: book.title,
+        brand: authors,
+        category: "Books",
+        description: `Book by ${authors}. Published by ${publishers}. Pages: ${book.number_of_pages || 'N/A'}.`,
+        manufacturer: publishers,
+        weight: book.number_of_pages ? `${book.number_of_pages} pages` : "",
+        images: coverUrl ? [{ url: coverUrl, public_id: "external_openlibrary" }] : []
+      };
+    }
+  } catch (err) {
+    console.log("⚠️ [API 6] OpenLibrary failed or timed out:", err.message);
+  }
+
   return null;
 };
 
@@ -478,5 +528,124 @@ export const deleteProduct = async (req, res) => {
     return res.status(200).json({ success: true, data: {} });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+// @desc    Scan Book Barcode / ISBN (Google Books + Open Library API)
+// @route   POST /api/v1/products/scan-book-isbn
+// @access  Public / Seller
+export const scanBookIsbn = async (req, res) => {
+  try {
+    const isbn = (req.body.isbn || req.body.barcode || req.query.isbn || "").trim().replace(/[- ]/g, "");
+    if (!isbn) {
+      return res.status(400).json({ success: false, message: "ISBN or barcode is required" });
+    }
+
+    // 1. Search local DB
+    let product = await Product.findOne({ barcode: isbn });
+    if (product) {
+      return res.status(200).json({ success: true, found: true, source: "local_db", data: product });
+    }
+
+    // 2. Query Google Books API
+    try {
+      console.log(`📖 Querying Google Books API for ISBN: ${isbn}...`);
+      const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`, { signal: AbortSignal.timeout(4000) });
+      const gData = await gRes.json();
+
+      if (gData && gData.items && gData.items.length > 0 && gData.items[0].volumeInfo) {
+        const info = gData.items[0].volumeInfo;
+        const authors = info.authors ? info.authors.join(", ") : "Unknown Author";
+        const img = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "";
+        const bookData = {
+          name: info.title,
+          brand: authors,
+          category: "Books",
+          description: info.description || `Book by ${authors}. Published by ${info.publisher || "Unknown"}.`,
+          manufacturer: info.publisher || "Unknown Publisher",
+          weight: info.pageCount ? `${info.pageCount} pages` : "",
+          barcode: isbn,
+          barcodeType: isbn.length === 13 ? "ISBN13" : "ISBN10",
+          price: 0,
+          stockAvailable: 0,
+          isTemplate: true,
+          status: "TEMPLATE",
+          images: img ? [{ url: img.replace("http://", "https://"), public_id: "gbooks_cover" }] : [],
+          extraInfo: {
+            publishedDate: info.publishedDate || "",
+            language: info.language || "",
+            pageCount: info.pageCount || 0,
+            categories: info.categories || []
+          }
+        };
+
+        product = await Product.create(bookData);
+        return res.status(200).json({ success: true, found: true, source: "google_books", data: product });
+      }
+    } catch (gErr) {
+      console.warn("⚠️ Google Books lookup error:", gErr.message);
+    }
+
+    // 3. Query Open Library API
+    try {
+      console.log(`📚 Querying Open Library API for ISBN: ${isbn}...`);
+      const olRes = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`, { signal: AbortSignal.timeout(4000) });
+      const olData = await olRes.json();
+      const key = `ISBN:${isbn}`;
+
+      if (olData && olData[key] && olData[key].title) {
+        const book = olData[key];
+        const authors = book.authors ? book.authors.map((a) => a.name).join(", ") : "Unknown Author";
+        const publishers = book.publishers ? book.publishers.map((p) => p.name).join(", ") : "Unknown Publisher";
+        const coverUrl = book.cover?.large || book.cover?.medium || book.cover?.small || "";
+        const bookData = {
+          name: book.title,
+          brand: authors,
+          category: "Books",
+          description: `Book by ${authors}. Published by ${publishers}. Pages: ${book.number_of_pages || "N/A"}.`,
+          manufacturer: publishers,
+          weight: book.number_of_pages ? `${book.number_of_pages} pages` : "",
+          barcode: isbn,
+          barcodeType: isbn.length === 13 ? "ISBN13" : "ISBN10",
+          price: 0,
+          stockAvailable: 0,
+          isTemplate: true,
+          status: "TEMPLATE",
+          images: coverUrl ? [{ url: coverUrl, public_id: "openlibrary_cover" }] : [],
+          extraInfo: {
+            publishDate: book.publish_date || "",
+            pageCount: book.number_of_pages || 0
+          }
+        };
+
+        product = await Product.create(bookData);
+        return res.status(200).json({ success: true, found: true, source: "open_library", data: product });
+      }
+    } catch (olErr) {
+      console.warn("⚠️ Open Library lookup error:", olErr.message);
+    }
+
+    // 4. Fallback template
+    const templateData = {
+      name: `Book (ISBN: ${isbn})`,
+      brand: "",
+      category: "Books",
+      description: "Scanned book ISBN",
+      manufacturer: "",
+      weight: "",
+      barcode: isbn,
+      barcodeType: isbn.length === 13 ? "ISBN13" : "ISBN10",
+      price: 0,
+      stockAvailable: 0,
+      isTemplate: true,
+      status: "TEMPLATE",
+      images: []
+    };
+
+    product = await Product.create(templateData);
+    return res.status(200).json({ success: true, found: false, data: product, message: "ISBN registered as template. Please fill details." });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Server error scanning ISBN", error: error.message });
   }
 };

@@ -1,102 +1,249 @@
-import React, { useState } from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, IconButton, Button, Chip } from '@mui/material';
-import { Notifications as NotificationsIcon, LocalShipping, Payment, Delete, CheckCircle } from '@mui/icons-material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Avatar,
+  IconButton,
+  Button,
+  Chip,
+  Divider,
+  Tabs,
+  Tab,
+  Tooltip,
+} from '@mui/material';
+import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
+import TwoWheelerRoundedIcon from '@mui/icons-material/TwoWheelerRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
+import { setUnreadCount, showToast } from '../../redux/features/uiSlice';
+import { formatRelative } from '../../utils/format';
 
-const initialNotifications = [
-  { id: 1, title: 'New Delivery Assigned', message: 'You have a new delivery request from Sarah Jenkins.', time: '10 mins ago', type: 'delivery', read: false },
-  { id: 2, title: 'Payment Successful', message: 'Your weekly settlement of $840.20 has been processed.', time: '2 hours ago', type: 'payment', read: false },
-  { id: 3, title: 'Delivery Completed', message: 'Order DEL-1090 was successfully delivered.', time: '1 day ago', type: 'success', read: true },
+const TYPE_META = {
+  job: { icon: TwoWheelerRoundedIcon, tone: 'primary', label: 'Job' },
+  payout: { icon: PaymentsRoundedIcon, tone: 'success', label: 'Payout' },
+  completed: { icon: CheckCircleRoundedIcon, tone: 'secondary', label: 'Completed' },
+  alert: { icon: WarningAmberRoundedIcon, tone: 'warning', label: 'Alert' },
+  news: { icon: CampaignRoundedIcon, tone: 'info', label: 'Update' },
+};
+
+const SEED = [
+  {
+    id: 1,
+    type: 'job',
+    title: 'New job near Indiranagar',
+    message: 'DEL-2041 · Shree Grocery Mart → Koramangala · ₹68 payout, 3.4 km.',
+    date: '2026-08-11T14:22:00',
+    read: false,
+    link: '/deliveries/DEL-2041',
+  },
+  {
+    id: 2,
+    type: 'alert',
+    title: 'Insurance expires soon',
+    message: 'Upload your renewed two-wheeler insurance before 30 Sep 2026 to stay eligible.',
+    date: '2026-08-11T12:05:00',
+    read: false,
+    link: '/profile',
+  },
+  {
+    id: 3,
+    type: 'payout',
+    title: 'Weekly settlement credited',
+    message: '₹7,420 was transferred to HDFC ••4412 for the week ending 9 Aug.',
+    date: '2026-08-10T09:12:00',
+    read: false,
+    link: '/earnings',
+  },
+  {
+    id: 4,
+    type: 'completed',
+    title: 'DEL-2030 delivered',
+    message: 'Kavya Suresh rated you 5 stars. ₹66 added to today’s earnings.',
+    date: '2026-08-11T13:35:00',
+    read: true,
+    link: '/history',
+  },
+  {
+    id: 5,
+    type: 'news',
+    title: 'Surge active in HSR Layout',
+    message: 'Evening peak bonus of ₹15 per trip is live until 9 pm.',
+    date: '2026-08-11T11:00:00',
+    read: true,
+    link: '/map',
+  },
 ];
 
-const Notifications = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+const TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+];
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'delivery': return <LocalShipping />;
-      case 'payment': return <Payment />;
-      case 'success': return <CheckCircle />;
-      default: return <NotificationsIcon />;
-    }
-  };
+export default function Notifications() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [items, setItems] = useState(SEED);
+  const [tab, setTab] = useState(0);
 
-  const getColor = (type) => {
-    switch (type) {
-      case 'delivery': return 'info';
-      case 'payment': return 'primary';
-      case 'success': return 'success';
-      default: return 'default';
-    }
-  };
+  const unread = items.filter((item) => !item.read).length;
+
+  // Publish the count so the topbar, sidebar and bottom nav badges agree.
+  useEffect(() => {
+    dispatch(setUnreadCount(unread));
+  }, [dispatch, unread]);
+
+  const visible = useMemo(
+    () => (TABS[tab].key === 'unread' ? items.filter((item) => !item.read) : items),
+    [items, tab],
+  );
 
   const markAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+    setItems((list) => list.map((item) => ({ ...item, read: true })));
+    dispatch(showToast({ message: 'All notifications marked as read', severity: 'success' }));
   };
 
-  const removeNotification = (id) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const openItem = (item) => {
+    setItems((list) => list.map((entry) => (entry.id === item.id ? { ...entry, read: true } : entry)));
+    if (item.link) navigate(item.link);
+  };
+
+  const remove = (event, id) => {
+    event.stopPropagation();
+    setItems((list) => list.filter((item) => item.id !== id));
   };
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">
-          Notifications
-        </Typography>
-        <Button variant="outlined" onClick={markAllRead}>Mark All as Read</Button>
-      </Box>
+      <PageHeader
+        icon={NotificationsRoundedIcon}
+        title="Notifications"
+        subtitle={unread ? `${unread} unread ${unread === 1 ? 'update' : 'updates'}` : 'You’re all caught up.'}
+        actions={
+          <Button
+            variant="outlined"
+            startIcon={<DoneAllRoundedIcon />}
+            onClick={markAllRead}
+            disabled={!unread}
+          >
+            Mark all read
+          </Button>
+        }
+      />
 
-      <Paper sx={{ borderRadius: 3, boxShadow: 2, overflow: 'hidden' }}>
-        <List disablePadding>
-          {notifications.length === 0 ? (
-            <Box p={4} textAlign="center">
-              <Typography color="text.secondary">No new notifications.</Typography>
-            </Box>
-          ) : (
-            notifications.map((notif, index) => (
-              <Box key={notif.id} sx={{ bgcolor: notif.read ? 'transparent' : 'action.hover', borderBottom: index !== notifications.length - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                <ListItem
-                  secondaryAction={
-                    <IconButton edge="end" aria-label="delete" onClick={() => removeNotification(notif.id)} color="error">
-                      <Delete />
-                    </IconButton>
-                  }
-                  sx={{ p: 3 }}
+      <Card sx={{ borderRadius: 4, overflow: 'hidden' }}>
+        <Box sx={{ px: { xs: 1, sm: 2 }, pt: 1 }}>
+          <Tabs value={tab} onChange={(_, value) => setTab(value)}>
+            {TABS.map((entry) => (
+              <Tab
+                key={entry.key}
+                label={entry.key === 'unread' && unread ? `${entry.label} (${unread})` : entry.label}
+              />
+            ))}
+          </Tabs>
+        </Box>
+        <Divider />
+
+        {!visible.length ? (
+          <EmptyState
+            icon={NotificationsRoundedIcon}
+            title={TABS[tab].key === 'unread' ? 'Nothing unread' : 'No notifications'}
+            description="Job offers, payout confirmations and account alerts land here."
+          />
+        ) : (
+          <Stack divider={<Divider />}>
+            {visible.map((item) => {
+              const meta = TYPE_META[item.type] || TYPE_META.news;
+              const Icon = meta.icon;
+              return (
+                <Stack
+                  key={item.id}
+                  direction="row"
+                  spacing={1.75}
+                  alignItems="flex-start"
+                  onClick={() => openItem(item)}
+                  sx={{
+                    p: { xs: 2, sm: 2.5 },
+                    cursor: 'pointer',
+                    bgcolor: item.read ? 'transparent' : 'background.subtle',
+                    transition: 'background-color 160ms ease',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
                 >
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: `${getColor(notif.type)}.100`, color: `${getColor(notif.type)}.main` }}>
-                      {getIcon(notif.type)}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="subtitle1" fontWeight={notif.read ? 'normal' : 'bold'}>
-                          {notif.title}
-                        </Typography>
-                        {!notif.read && <Chip label="New" color="error" size="small" sx={{ height: 20, fontSize: '0.7rem' }} />}
-                      </Box>
-                    }
-                    secondary={
-                      <React.Fragment>
-                        <Typography component="span" variant="body2" color="text.primary">
-                          {notif.message}
-                        </Typography>
-                        <br />
-                        <Typography component="span" variant="caption" color="text.secondary">
-                          {notif.time}
-                        </Typography>
-                      </React.Fragment>
-                    }
-                  />
-                </ListItem>
-              </Box>
-            ))
-          )}
-        </List>
-      </Paper>
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      flexShrink: 0,
+                      bgcolor: `${meta.tone}.50`,
+                      color: `${meta.tone}.main`,
+                    }}
+                  >
+                    <Icon fontSize="small" />
+                  </Avatar>
+
+                  <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: item.read ? 700 : 800 }}>
+                        {item.title}
+                      </Typography>
+                      {!item.read && (
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
+                      )}
+                      <Chip
+                        size="small"
+                        label={meta.label}
+                        sx={{
+                          height: 20,
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          bgcolor: `${meta.tone}.50`,
+                          color: `${meta.tone}.dark`,
+                        }}
+                      />
+                    </Stack>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.4 }}>
+                      {item.message}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 0.5 }}>
+                      {formatRelative(item.date)}
+                    </Typography>
+                  </Box>
+
+                  <Tooltip title="Dismiss">
+                    <IconButton
+                      size="small"
+                      aria-label="Dismiss notification"
+                      onClick={(event) => remove(event, item.id)}
+                      sx={{ flexShrink: 0, color: 'text.secondary' }}
+                    >
+                      <DeleteOutlineRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              );
+            })}
+          </Stack>
+        )}
+      </Card>
+
+      {items.length > 0 && (
+        <CardContent sx={{ px: 0, textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Notifications older than 30 days are removed automatically.
+          </Typography>
+        </CardContent>
+      )}
     </Box>
   );
-};
-
-export default Notifications;
+}

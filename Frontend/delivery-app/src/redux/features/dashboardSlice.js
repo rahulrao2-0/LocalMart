@@ -1,45 +1,53 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { apiFetch } from '../../utils/api';
+import { mockHistory } from '../../data/mockDeliveries';
 
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchData',
   async (_, { rejectWithValue }) => {
     try {
-      // In a real scenario, this fetches from GET /delivery/dashboard
-      // For now, we simulate the fetch and return mock data if backend isn't ready
+      // Real endpoint (GET /delivery/dashboard) isn't live yet, so this resolves
+      // demo figures. Amounts are in INR to match the rest of the platform.
       // const data = await apiFetch('/delivery/dashboard', { method: 'GET' });
       // return data;
-      
-      return new Promise((resolve) => setTimeout(() => resolve({
-        stats: {
-          todaysDeliveries: 12,
-          pendingDeliveries: 3,
-          completedDeliveries: 9,
-          todaysEarnings: 150.50,
-          weeklyEarnings: 840.20,
-          monthlyEarnings: 3200.00,
-          averageRating: 4.8,
-          currentStatus: 'Active',
-        },
-        recentDeliveries: [
-          { id: 'DEL-1001', status: 'Delivered', customer: 'Alice Smith', address: '123 Main St', amount: 15.00 },
-          { id: 'DEL-1002', status: 'Out For Delivery', customer: 'Bob Jones', address: '456 Oak Ave', amount: 12.50 },
-          { id: 'DEL-1003', status: 'Pending', customer: 'Charlie Brown', address: '789 Pine Ln', amount: 10.00 },
-        ],
-        chartData: [
-          { name: 'Mon', earnings: 120 },
-          { name: 'Tue', earnings: 150 },
-          { name: 'Wed', earnings: 110 },
-          { name: 'Thu', earnings: 170 },
-          { name: 'Fri', earnings: 200 },
-          { name: 'Sat', earnings: 250 },
-          { name: 'Sun', earnings: 90 },
-        ]
-      }), 800));
+
+      return new Promise((resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              stats: {
+                todaysDeliveries: 14,
+                pendingDeliveries: 3,
+                completedDeliveries: 11,
+                todaysEarnings: 1284,
+                weeklyEarnings: 8460,
+                monthlyEarnings: 34200,
+                averageRating: 4.8,
+                totalRatings: 312,
+                acceptanceRate: 94,
+                onTimeRate: 97,
+                hoursOnline: 6.5,
+                distanceKm: 48.6,
+                currentStatus: 'Active',
+                todayTarget: 1500,
+              },
+              recentDeliveries: mockHistory.slice(0, 5),
+              chartData: [
+                { name: 'Mon', earnings: 1120, deliveries: 11 },
+                { name: 'Tue', earnings: 1350, deliveries: 13 },
+                { name: 'Wed', earnings: 980, deliveries: 9 },
+                { name: 'Thu', earnings: 1470, deliveries: 15 },
+                { name: 'Fri', earnings: 1620, deliveries: 16 },
+                { name: 'Sat', earnings: 1980, deliveries: 19 },
+                { name: 'Sun', earnings: 1284, deliveries: 14 },
+              ],
+            }),
+          700,
+        ),
+      );
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to load dashboard data');
     }
-  }
+  },
 );
 
 const initialState = {

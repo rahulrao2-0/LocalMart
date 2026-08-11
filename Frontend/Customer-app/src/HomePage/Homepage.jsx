@@ -53,18 +53,12 @@ import {
 } from "@mui/icons-material";
 import SearchBar from "./SearchBar";
 import CategorySection from "./CategorySection";
+import LocalNeighborhoodMap from "./LocalNeighborhoodMap";
 
 
-const nearbyShops = [
-  { name: "Shree Grocery Mart", distanceKm: 0.6, isOpen: true, rating: 4.5, x: 120, y: 150 },
-  { name: "Om Sai Kirana", distanceKm: 1.4, isOpen: true, rating: 4.3, x: 280, y: 80 },
-  { name: "Tech Point", distanceKm: 1.9, isOpen: true, rating: 4.7, x: 220, y: 220 },
-  { name: "Indore Furniture Hub", distanceKm: 3.2, isOpen: true, rating: 4.6, x: 420, y: 180 },
-  { name: "Modern Home Store", distanceKm: 4.8, isOpen: true, rating: 4.4, x: 150, y: 350 },
-  { name: "Patel General Store", distanceKm: 2.1, isOpen: false, rating: 4.1, x: 350, y: 310 },
-];
 
-const categories = ["All", "Vegetables", "Furniture", "Electronics"];
+
+const categories = ["All", "Vegetables", "Furniture", "Electronics","Waters"];
 
 export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogout, onNavigate, cart = [], onAddToCart }) {
   const navigate = useNavigate();
@@ -261,238 +255,20 @@ export default function HomePage({ themeMode, onToggleTheme, currentUser, onLogo
       </Box>
 
       {/* CORE CONTENT LAYOUT */}
-      <Container maxWidth="lg" sx={{ py: 2 }}>
-        <Grid container spacing={4}>
+      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, sm: 3, md: 5 } }}>
+        <Grid container spacing={{ xs: 4, md: 5 }}>
           {/* LEFT SIDEBAR: MAP & DISCOVERY */}
-          <Grid size={{ xs: 12, md: 4 }} sx={{ order: { xs: 2, md: 1 } }}>
-            {/* STATS BANNER */}
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 3,
-                borderRadius: 4,
-                mb: 3,
-                background: themeMode === "dark" 
-                  ? "linear-gradient(135deg, rgba(108, 93, 211, 0.1) 0%, rgba(22, 25, 37, 0.9) 100%)" 
-                  : "linear-gradient(135deg, #F0EFFF 0%, #FFFFFF 100%)",
-                border: "1px solid",
-                borderColor: "primary.light",
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                <TrendingUpIcon color="primary" />
-                <Typography variant="subtitle1" fontWeight={800}>
-                  Shops open near you
-                </Typography>
-              </Box>
-              <Grid container spacing={2}>
-                {nearbyShops.map((shop) => (
-                  <Grid size={6} key={shop.name}>
-                    <Paper
-                      variant="outlined"
-                      onMouseEnter={() => setHoveredShop(shop)}
-                      onMouseLeave={() => setHoveredShop(null)}
-                      onClick={() => setSelectedShopOnMap(shop)}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 3,
-                        cursor: "pointer",
-                        backgroundColor:
-                          selectedShopOnMap?.name === shop.name
-                            ? "rgba(108, 93, 211, 0.08)"
-                            : "background.paper",
-                        borderColor:
-                          selectedShopOnMap?.name === shop.name
-                            ? "primary.main"
-                            : hoveredShop?.name === shop.name
-                            ? "primary.light"
-                            : "divider",
-                        transform: hoveredShop?.name === shop.name ? "scale(1.03)" : "none",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={700} noWrap sx={{ color: "text.primary" }}>
-                        {shop.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {shop.distanceKm} km · {shop.rating}★
-                      </Typography>
-                      <Chip
-                        size="small"
-                        label={shop.isOpen ? "Open" : "Closed"}
-                        color={shop.isOpen ? "success" : "default"}
-                        sx={{ height: 16, fontSize: "9px", mt: 0.5, fontWeight: 700 }}
-                      />
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-
-            {/* MOCK MAP VIEW CARD */}
-            <Paper
-              variant="outlined"
-              sx={{
-                p: 2.5,
-                borderRadius: 4,
-                bgcolor: "background.paper",
-                boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.02)",
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MapOutlinedIcon color="primary" />
-                  <Typography variant="subtitle1" fontWeight={800}>
-                    Local Neighborhood Map
-                  </Typography>
-                </Box>
-                {selectedShopOnMap && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    color="secondary"
-                    onClick={() => setSelectedShopOnMap(null)}
-                    sx={{ p: 0, minWidth: 0 }}
-                  >
-                    Clear route
-                  </Button>
-                )}
-              </Box>
-
-              {/* VECTOR neighborhood map */}
-              <Box
-                sx={{
-                  position: "relative",
-                  height: 250,
-                  borderRadius: 3,
-                  overflow: "hidden",
-                  bgcolor: themeMode === "dark" ? "#1e2235" : "#eef2f7",
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <svg width="100%" height="100%" style={{ position: "absolute" }}>
-                  {/* Grid lines symbolizing streets */}
-                  <line x1="0" y1="50" x2="100%" y2="50" stroke={themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="6" />
-                  <line x1="0" y1="130" x2="100%" y2="130" stroke={themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="8" />
-                  <line x1="0" y1="200" x2="100%" y2="200" stroke={themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="6" />
-                  <line x1="100" y1="0" x2="100" y2="100%" stroke={themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="8" />
-                  <line x1="250" y1="0" x2="250" y2="100%" stroke={themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="6" />
-                  <line x1="380" y1="0" x2="380" y2="100%" stroke={themeMode === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="8" />
-
-                  {/* Route draw if shop is selected */}
-                  {selectedShopOnMap && (
-                    <path
-                      d={`M 200 120 L ${selectedShopOnMap.x} ${selectedShopOnMap.y}`}
-                      fill="none"
-                      stroke="#FF7551"
-                      strokeWidth="3"
-                      strokeDasharray="5,5"
-                      style={{ animation: "dash 1.5s linear infinite" }}
-                    />
-                  )}
-
-                  {/* User Pin */}
-                  <circle cx="200" cy="120" r="10" fill="#6C5DD3" stroke="#FFFFFF" strokeWidth="2" />
-                  <circle cx="200" cy="120" r="4" fill="#FFFFFF" />
-                </svg>
-
-                {/* Map Labels/Pins */}
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 125,
-                    left: 205,
-                    bgcolor: "primary.main",
-                    color: "#FFFFFF",
-                    fontSize: 9,
-                    fontWeight: 700,
-                    px: 0.5,
-                    borderRadius: 1,
-                  }}
-                >
-                  YOU (Indore)
-                </Box>
-
-                {nearbyShops.map((shop) => (
-                  <Box
-                    key={shop.name}
-                    onMouseEnter={() => setHoveredShop(shop)}
-                    onMouseLeave={() => setHoveredShop(null)}
-                    onClick={() => setSelectedShopOnMap(shop)}
-                    sx={{
-                      position: "absolute",
-                      left: shop.x - 8,
-                      top: shop.y - 16,
-                      cursor: "pointer",
-                      zIndex: hoveredShop?.name === shop.name || selectedShopOnMap?.name === shop.name ? 5 : 2,
-                    }}
-                  >
-                    <PlaceIcon
-                      sx={{
-                        color:
-                          selectedShopOnMap?.name === shop.name
-                            ? "secondary.main"
-                            : hoveredShop?.name === shop.name
-                            ? "primary.main"
-                            : shop.isOpen
-                            ? "success.main"
-                            : "text.disabled",
-                        fontSize: hoveredShop?.name === shop.name ? 26 : 22,
-                        filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
-                        transition: "all 0.2s ease",
-                      }}
-                    />
-                    {(hoveredShop?.name === shop.name || selectedShopOnMap?.name === shop.name) && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          bottom: 24,
-                          left: "50%",
-                          transform: "translateX(-50%)",
-                          bgcolor: "background.paper",
-                          color: "text.primary",
-                          boxShadow: 3,
-                          borderRadius: 1.5,
-                          p: 0.75,
-                          width: 130,
-                          fontSize: 9,
-                          fontWeight: 700,
-                          border: "1px solid",
-                          borderColor: "primary.main",
-                        }}
-                      >
-                        <div style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          {shop.name}
-                        </div>
-                        <div style={{ color: "#FF7551" }}>Distance: {shop.distanceKm} km</div>
-                      </Box>
-                    )}
-                  </Box>
-                ))}
-              </Box>
-
-              {/* Map Footer Route Details */}
-              {selectedShopOnMap && (
-                <Alert
-                  severity="info"
-                  icon={<NavigationOutlinedIcon />}
-                  sx={{ mt: 2, borderRadius: 2.5, "& .MuiAlert-message": { width: "100%" } }}
-                >
-                  <Typography variant="caption" fontWeight={700} display="block">
-                    Route to {selectedShopOnMap.name}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
-                    Delivery ETA: <strong>{Math.round(10 + selectedShopOnMap.distanceKm * 5)} mins</strong> (Pickup:{" "}
-                    <strong>{Math.round(5 + selectedShopOnMap.distanceKm * 3)} mins travel</strong>)
-                  </Typography>
-                </Alert>
-              )}
-            </Paper>
+          <Grid size={{ xs: 12, md: 4.8, lg: 4.5 }} sx={{ order: { xs: 2, md: 1 }, mb: { xs: 4, md: 0 } }}>
+            <LocalNeighborhoodMap
+              themeMode={themeMode}
+              selectedShop={selectedShopOnMap}
+              onSelectShop={setSelectedShopOnMap}
+              onHoverShop={setHoveredShop}
+            />
           </Grid>
 
           {/* RIGHT MAIN AREA: CATEGORY CHIPS & PRODUCT LIST */}
-          <Grid size={{ xs: 12, md: 8 }} sx={{ order: { xs: 1, md: 2 } }}>
+          <Grid size={{ xs: 12, md: 7.2, lg: 7.5 }} sx={{ order: { xs: 1, md: 2 } }}>
             {/* Category Chips Bar */}
             <Box
               sx={{
