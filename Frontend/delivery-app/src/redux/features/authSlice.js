@@ -155,7 +155,9 @@ const authSlice = createSlice({
       })
       // Fetch Me
       .addCase(fetchMe.pending, (state) => {
-        state.loading = true;
+        if (!state.user) {
+          state.loading = true;
+        }
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.loading = false;

@@ -69,7 +69,7 @@ export default function useGeolocation({ watch = true, enabled = true } = {}) {
     clearWatch();
     setStatus('locating');
 
-    const opts = { enableHighAccuracy: true, timeout: 12_000, maximumAge: 5_000 };
+    const opts = { enableHighAccuracy: false, timeout: 4_000, maximumAge: 10_000 };
 
     if (watch) {
       watchIdRef.current = navigator.geolocation.watchPosition(handleSuccess, handleError, opts);

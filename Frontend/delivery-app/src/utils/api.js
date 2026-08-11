@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 export const getAccessToken = () => localStorage.getItem('delivery_access_token');
 export const getRefreshToken = () => localStorage.getItem('delivery_refresh_token');
@@ -22,6 +22,7 @@ const refreshAccessToken = async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
+    signal: AbortSignal.timeout(3000),
   });
 
   if (!response.ok) {
@@ -51,6 +52,7 @@ export const apiFetch = async (endpoint, options = {}) => {
   const fetchOptions = {
     ...options,
     headers,
+    signal: options.signal || AbortSignal.timeout(3000),
   };
 
   let response = await fetch(url, fetchOptions);
