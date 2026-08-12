@@ -1,31 +1,38 @@
 import React from 'react';
-import { 
-  AppBar, Toolbar, IconButton, Typography, Box, Avatar, Menu, MenuItem, Divider, alpha, useTheme
+import {
+  AppBar, Toolbar, IconButton, Typography, Box, Avatar, Menu, MenuItem,
+  Divider, Tooltip, ListItemIcon, alpha, useTheme,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
+import MenuIcon from '@mui/icons-material/MenuRounded';
+import DarkModeIcon from '@mui/icons-material/DarkModeRounded';
+import LightModeIcon from '@mui/icons-material/LightModeRounded';
+import LogoutIcon from '@mui/icons-material/LogoutRounded';
+import StorefrontIcon from '@mui/icons-material/StorefrontRounded';
+import PersonIcon from '@mui/icons-material/PersonRounded';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../../features/auth/authSlice';
 import NotificationBell from '../NotificationBell';
-import { useNavigate } from 'react-router-dom';
+import { NAV_ITEMS, isNavItemActive } from '../Sidebar/Sidebar';
+
+export const TOPBAR_HEIGHT = 70;
 
 const Topbar = ({ handleDrawerToggle, drawerWidth, themeMode, toggleTheme }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
+  const location = useLocation();
   const theme = useTheme();
+  const { user } = useSelector((state) => state.auth);
 
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
 
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
+  // Derive the title from the route instead of hardcoding "Dashboard Overview",
+  // which was shown on every page.
+  const activeItem = NAV_ITEMS.find((item) => isNavItemActive(item, location.pathname));
+  const pageTitle = activeItem?.text === 'Dashboard' ? 'Dashboard Overview' : activeItem?.text || 'Seller Hub';
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const handleMenuClose = () => setAnchorEl(null);
 
   const handleLogout = async () => {
     handleMenuClose();
@@ -33,93 +40,119 @@ const Topbar = ({ handleDrawerToggle, drawerWidth, themeMode, toggleTheme }) => 
     navigate('/login');
   };
 
-  const handleGoToCustomerApp = () => {
-    handleMenuClose();
-    window.location.href = 'http://localhost:5173';
-  };
+  const displayName = user?.businessName || user?.full_name || user?.ownerName || 'Seller Admin';
+  const isDark = themeMode === 'dark';
 
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        width: { sm: `calc(100% - ${drawerWidth}px)` },
-        ml: { sm: `${drawerWidth}px` },
-        backgroundColor: alpha(theme.palette.background.paper, 0.7),
+        width: { lg: `calc(100% - ${drawerWidth}px)` },
+        ml: { lg: `${drawerWidth}px` },
+        bgcolor: alpha(theme.palette.background.paper, 0.8),
         backdropFilter: 'blur(16px)',
         borderBottom: `1px solid ${theme.palette.divider}`,
-        color: theme.palette.text.primary,
+        color: 'text.primary',
         zIndex: theme.zIndex.drawer + 1,
-        transition: 'all 0.3s ease'
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 }, minHeight: '70px !important' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Toolbar
+        sx={{
+          justifyContent: 'space-between',
+          gap: 1,
+          px: { xs: 1.5, sm: 2.5, md: 3 },
+          minHeight: `${TOPBAR_HEIGHT}px !important`,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
+            aria-label="Open navigation menu"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: { xs: 0.5, sm: 1.5 }, display: { lg: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" fontWeight="800" noWrap component="div" sx={{ display: { xs: 'none', sm: 'block' }, letterSpacing: '-0.02em' }}>
-            Dashboard Overview
+          <Typography
+            variant="h6"
+            noWrap
+            component="h1"
+            sx={{ fontWeight: 800, letterSpacing: '-0.02em', minWidth: 0 }}
+          >
+            {pageTitle}
           </Typography>
         </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-          <Box sx={{ 
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            borderRadius: '50%',
-            p: 0.5
-          }}>
-            <IconButton onClick={toggleTheme} color="primary" sx={{ 
-              transition: 'transform 0.2s', 
-              '&:hover': { transform: 'rotate(15deg)', bgcolor: alpha(theme.palette.primary.main, 0.1) } 
-            }}>
-              {themeMode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.25, sm: 1 }, flexShrink: 0 }}>
+          <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <IconButton
+              onClick={toggleTheme}
+              aria-label="Toggle color mode"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  color: 'primary.main',
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                },
+              }}
+            >
+              {isDark ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
-          </Box>
-          
-          <Box sx={{ 
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            borderRadius: '50%',
-            p: 0.5
-          }}>
-            <NotificationBell />
-          </Box>
-          
-          <Divider orientation="vertical" flexItem sx={{ mx: 1, my: 2, opacity: 0.5 }} />
-          
-          <Box 
-            onClick={handleMenuClick} 
-            sx={{ 
-              display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer',
-              p: 0.5, pr: 2, borderRadius: 10,
-              transition: 'background 0.2s',
-              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.05) }
+          </Tooltip>
+
+          <NotificationBell />
+
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{ mx: 1, my: 2, display: { xs: 'none', sm: 'block' } }}
+          />
+
+          <Box
+            component="button"
+            type="button"
+            onClick={(e) => setAnchorEl(e.currentTarget)}
+            aria-label="Open account menu"
+            aria-haspopup="menu"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.25,
+              cursor: 'pointer',
+              border: 0,
+              font: 'inherit',
+              color: 'inherit',
+              p: 0.5,
+              pr: { xs: 0.5, md: 1.5 },
+              borderRadius: 99,
+              bgcolor: 'transparent',
+              transition: 'background-color .2s ease',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
             }}
           >
-            <Avatar sx={{ 
-              bgcolor: theme.palette.primary.main, 
-              width: 40, height: 40,
-              boxShadow: `0 4px 10px ${alpha(theme.palette.primary.main, 0.3)}`,
-              fontWeight: 800
-            }}>
-              {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
+            <Avatar
+              sx={{
+                width: 38,
+                height: 38,
+                bgcolor: 'primary.main',
+                boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.35)}`,
+              }}
+            >
+              {displayName.charAt(0).toUpperCase()}
             </Avatar>
-            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-              <Typography variant="subtitle2" fontWeight="700" lineHeight={1.2}>
-                {user?.full_name || 'Seller Admin'}
+            {/* Text block is dead weight below md — avatar alone carries it. */}
+            <Box sx={{ display: { xs: 'none', md: 'block' }, textAlign: 'left', minWidth: 0 }}>
+              <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25, maxWidth: 160 }}>
+                {displayName}
               </Typography>
-              <Typography variant="caption" color="textSecondary" fontWeight="600">
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ fontWeight: 600 }}>
                 Manage your store
               </Typography>
             </Box>
           </Box>
-          
+
           <Menu
             anchorEl={anchorEl}
             open={open}
@@ -127,31 +160,37 @@ const Topbar = ({ handleDrawerToggle, drawerWidth, themeMode, toggleTheme }) => 
             onClick={handleMenuClose}
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-            PaperProps={{
-              elevation: 0,
-              className: 'glass-panel',
-              sx: {
-                overflow: 'visible',
-                filter: `drop-shadow(0px 10px 30px ${alpha('#000', 0.1)})`,
-                mt: 1.5, minWidth: 200, borderRadius: 3,
-                '& .MuiMenuItem-root': { py: 1.5, px: 2, fontWeight: 600, borderRadius: 2, mx: 1, my: 0.5 },
-                '& .MuiMenuItem-root:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
-                '&::before': {
-                  content: '""',
-                  display: 'block',
-                  position: 'absolute',
-                  top: 0, right: 20,
-                  width: 12, height: 12,
-                  bgcolor: 'background.paper',
-                  transform: 'translateY(-50%) rotate(45deg)',
-                  zIndex: 0,
-                },
-              },
-            }}
+            slotProps={{ paper: { sx: { minWidth: 224, py: 0.5 } } }}
           >
-            <MenuItem onClick={handleGoToCustomerApp}>Switch to Customer App</MenuItem>
-            <Divider sx={{ my: 1 }} />
-            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>Logout</MenuItem>
+            <Box sx={{ px: 2, py: 1.25, display: { md: 'none' } }}>
+              <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
+                {displayName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap>
+                {user?.email || 'Seller account'}
+              </Typography>
+            </Box>
+            <Divider sx={{ display: { md: 'none' }, mb: 0.5 }} />
+
+            <MenuItem onClick={() => navigate('/dashboard/profile')}>
+              <ListItemIcon>
+                <PersonIcon fontSize="small" />
+              </ListItemIcon>
+              My Profile
+            </MenuItem>
+            <MenuItem onClick={() => { window.location.href = 'http://localhost:5173'; }}>
+              <ListItemIcon>
+                <StorefrontIcon fontSize="small" />
+              </ListItemIcon>
+              Customer App
+            </MenuItem>
+            <Divider sx={{ my: 0.5 }} />
+            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" color="error" />
+              </ListItemIcon>
+              Logout
+            </MenuItem>
           </Menu>
         </Box>
       </Toolbar>

@@ -29,19 +29,27 @@ export const apiRequest = async (
         credentials: "include",
       }).finally(() => {
         isRefreshing = false;
-        refreshPromise = null;
       });
     }
 
-    const refreshResponse = await refreshPromise;
+    // Capture reference before it can be nulled by another caller
+    const currentRefreshPromise = refreshPromise;
+    const refreshResponse = await currentRefreshPromise;
+
+    // Clear the shared promise after resolution
+    if (refreshPromise === currentRefreshPromise) {
+      refreshPromise = null;
+    }
 
     if (refreshResponse && refreshResponse.ok) {
       // Retry original request with newly issued access token
       return apiRequest(endpoint, options, false);
     }
 
-    // Refresh token also expired or invalid
-    window.location.href = "/login";
+    // Refresh token also expired or invalid — only redirect if not already on login
+    if (window.location.pathname !== "/login" && window.location.pathname !== "/signup") {
+      window.location.href = "/login";
+    }
     throw new Error("Session expired. Please log in again.");
   }
 

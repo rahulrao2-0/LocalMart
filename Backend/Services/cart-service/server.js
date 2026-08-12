@@ -2,23 +2,29 @@ import dotenv from 'dotenv';
 dotenv.config();
 import app from './app.js';
 import connectDB from './config/db.js';
-import { connectProducer, redis } from '@localmart/shared';
+import { connectProducer } from '@localmart/shared';
 import { runConsumer } from './kafka/consumer.js';
 
 const startServer = async () => {
     try {
         await connectDB();
+        console.log('✅ MongoDB connected for Cart Service');
+    } catch (err) {
+        console.error('❌ Failed to connect MongoDB for Cart Service:', err.message);
+    }
+
+    try {
         await connectProducer();
         await runConsumer();
-        
-        const PORT = process.env.PORT || 4003;
-        app.listen(PORT, () => {
-            console.log(`Cart Service running on port ${PORT}`);
-        });
+        console.log('✅ Kafka Consumer & Producer connected for Cart Service');
     } catch (err) {
-        console.error('Failed to start server:', err);
-        process.exit(1);
+        console.warn('⚠️ Kafka connection issue in Cart Service, HTTP server running anyway:', err.message);
     }
+    
+    const PORT = process.env.PORT || 3006;
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Cart Service running on port ${PORT}`);
+    });
 };
 
 startServer();

@@ -2,24 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import {
-  IconButton,
-  Badge,
-  Menu,
-  MenuItem,
-  Typography,
-  Box,
-  Divider,
-  Button
+  IconButton, Badge, Menu, Typography, Box, Divider, Button, Tooltip, Avatar, alpha, useTheme,
 } from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import NotificationsIcon from '@mui/icons-material/NotificationsRounded';
+import NotificationsOffIcon from '@mui/icons-material/NotificationsOffRounded';
 
 export default function NotificationBell() {
+  const theme = useTheme();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [anchorEl, setAnchorEl] = useState(null);
-  
+
   const user = useSelector((state) => state.auth.user);
-  const token = useSelector((state) => state.auth.token); 
+  const token = useSelector((state) => state.auth.token);
 
   useEffect(() => {
     if (!user) return;
@@ -41,7 +36,7 @@ export default function NotificationBell() {
         if (data && data.success) {
           setNotifications(data.data || []);
         }
-        
+
         const countRes = await fetch(`http://localhost:3000/api/v1/notifications/unread?userId=${userId}`, {
           credentials: 'include',
           headers
@@ -54,7 +49,7 @@ export default function NotificationBell() {
         console.error("Failed to fetch notifications", error);
       }
     };
-    
+
     fetchNotifications();
 
     const socket = io('http://localhost:5003');
@@ -95,50 +90,133 @@ export default function NotificationBell() {
 
   return (
     <>
-      <IconButton onClick={handleOpen} sx={{ color: 'text.primary' }}>
-        <Badge badgeContent={unreadCount} color="error">
-          <NotificationsIcon />
-        </Badge>
-      </IconButton>
+      <Tooltip title="Notifications">
+        <IconButton
+          onClick={handleOpen}
+          aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+          sx={{
+            color: 'text.secondary',
+            '&:hover': { color: 'primary.main', bgcolor: alpha(theme.palette.primary.main, 0.08) },
+          }}
+        >
+          <Badge
+            badgeContent={unreadCount}
+            color="error"
+            max={99}
+            slotProps={{ badge: { sx: { fontWeight: 800, fontSize: '0.65rem' } } }}
+          >
+            <NotificationsIcon />
+          </Badge>
+        </IconButton>
+      </Tooltip>
 
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        PaperProps={{
-          sx: { width: 340, maxHeight: 420, borderRadius: 3, mt: 1, boxShadow: '0px 10px 30px rgba(0,0,0,0.15)' }
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        slotProps={{
+          paper: {
+            sx: {
+              // Never wider than the viewport on a 360px phone. The previous
+              // fixed `width: 340` was passed via PaperProps, which MUI v9
+              // removed, so it had no effect at all.
+              width: 'min(360px, calc(100vw - 24px))',
+              maxHeight: 'min(440px, calc(100vh - 100px))',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            },
+          },
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">New Notifications</Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 1,
+            px: 2,
+            py: 1.5,
+            flexShrink: 0,
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+            Notifications
+            {unreadCount > 0 && (
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.75, fontWeight: 600 }}>
+                {unreadCount} new
+              </Typography>
+            )}
+          </Typography>
           {unreadCount > 0 && (
-            <Button size="small" onClick={markAllAsRead} sx={{ textTransform: 'none', fontWeight: 700 }}>
-              Clear All
+            <Button size="small" onClick={markAllAsRead} sx={{ fontWeight: 700, flexShrink: 0 }}>
+              Clear all
             </Button>
           )}
         </Box>
-        <Divider />
-        {notifications.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">No new notifications</Typography>
-          </Box>
-        ) : (
-          notifications.map(notif => (
-            <MenuItem key={notif._id} sx={{ whiteSpace: 'normal', bgcolor: 'action.hover', py: 1.5 }}>
-              <Box>
-                <Typography variant="subtitle2" fontWeight="bold" color="primary.main">
-                  {notif.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {notif.message}
-                </Typography>
-                <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5 }}>
-                  {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
+
+        <Divider sx={{ flexShrink: 0 }} />
+
+        <Box sx={{ overflowY: 'auto', flex: 1 }}>
+          {notifications.length === 0 ? (
+            <Box sx={{ px: 3, py: 4, textAlign: 'center' }}>
+              <NotificationsOffIcon sx={{ fontSize: 32, color: 'text.disabled', mb: 1 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                You're all caught up
+              </Typography>
+              <Typography variant="caption" color="text.disabled">
+                New order events will appear here.
+              </Typography>
+            </Box>
+          ) : (
+            notifications.map((notif) => (
+              <Box
+                key={notif._id}
+                sx={{
+                  display: 'flex',
+                  gap: 1.5,
+                  px: 2,
+                  py: 1.5,
+                  borderLeft: '3px solid',
+                  borderColor: 'primary.main',
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  transition: 'background-color .2s ease',
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) },
+                  '& + &': { borderTop: `1px solid ${theme.palette.divider}` },
+                }}
+              >
+                <Avatar
+                  variant="rounded"
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    flexShrink: 0,
+                    borderRadius: 2,
+                    bgcolor: alpha(theme.palette.primary.main, 0.15),
+                    color: 'primary.main',
+                  }}
+                >
+                  <NotificationsIcon sx={{ fontSize: 18 }} />
+                </Avatar>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.35 }}>
+                    {notif.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25, fontSize: '0.8rem' }}>
+                    {notif.message}
+                  </Typography>
+                  <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5 }}>
+                    {notif.createdAt
+                      ? new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : 'Just now'}
+                  </Typography>
+                </Box>
               </Box>
-            </MenuItem>
-          ))
-        )}
+            ))
+          )}
+        </Box>
       </Menu>
     </>
   );

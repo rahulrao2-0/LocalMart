@@ -1,6 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { Routes, Route } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  fetchCart,
+  addToCartAsync,
+  updateQuantityAsync,
+  removeFromCartAsync,
+  clearCartAsync,
+  selectCartItems,
+} from "./features/cart/cartSlice";
 
 import { getTheme } from "./theme";
 
@@ -19,9 +28,15 @@ import "./App.css";
 
 function App() {
   const [themeMode, setThemeMode] = useState("light");
+  const dispatch = useDispatch();
 
-  // Shared Cart State across application
-  const [cart, setCart] = useState([]);
+  // Redux Toolkit Cart State (Synced with Backend cart-service)
+  const cart = useSelector(selectCartItems);
+
+  // Fetch cart from backend cart-service on initial app mount / refresh
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
 
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
 
@@ -30,49 +45,28 @@ function App() {
   };
 
   const handleAddToCart = (product, fulfillmentMode = "delivery", shop) => {
-    setCart((prevCart) => {
-      const selectedShop = shop || product.shops?.[0] || { shopName: "Local Shop", price: product.price || 30 };
-      const existingIndex = prevCart.findIndex(
-        (item) => item.product.id === product.id && item.shop.shopName === selectedShop.shopName
-      );
-
-      if (existingIndex > -1) {
-        const updated = [...prevCart];
-        updated[existingIndex].quantity += 1;
-        return updated;
-      }
-
-      return [
-        ...prevCart,
-        {
-          product,
-          shop: selectedShop,
-          quantity: 1,
-          fulfillmentMode,
-        },
-      ];
-    });
+    dispatch(addToCartAsync({ product, quantity: 1 }));
   };
 
   const handleUpdateQuantity = (index, delta) => {
-    setCart((prevCart) => {
-      const newCart = [...prevCart];
-      const newQty = newCart[index].quantity + delta;
-      if (newQty <= 0) {
-        newCart.splice(index, 1);
-      } else {
-        newCart[index].quantity = newQty;
-      }
-      return newCart;
-    });
+    const item = cart[index];
+    if (item) {
+      const productId = item.product?.id || item.product?._id;
+      const newQty = item.quantity + delta;
+      dispatch(updateQuantityAsync({ productId, quantity: newQty }));
+    }
   };
 
   const handleRemoveFromCart = (index) => {
-    setCart((prevCart) => prevCart.filter((_, idx) => idx !== index));
+    const item = cart[index];
+    if (item) {
+      const productId = item.product?.id || item.product?._id;
+      dispatch(removeFromCartAsync(productId));
+    }
   };
 
   const handleClearCart = () => {
-    setCart([]);
+    dispatch(clearCartAsync());
   };
 
   return (
