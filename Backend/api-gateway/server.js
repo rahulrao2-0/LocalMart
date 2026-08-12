@@ -118,6 +118,16 @@ app.use(
   })
 );
 
+// Proxy for delivery API endpoints (/api/v1/delivery)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/delivery",
+    target: "http://127.0.0.1:3008",
+    changeOrigin: true,
+    on: { error: handleProxyError }
+  })
+);
+
 app.listen(3000, () => {
   console.log("API Gateway running on port 3000");
 });

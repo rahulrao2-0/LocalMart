@@ -53,6 +53,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   LocationOn as LocationIcon,
+  MyLocation as MyLocationIcon,
 } from "@mui/icons-material";
 
 export default function ProfilePage({ themeMode }) {
@@ -88,6 +89,8 @@ export default function ProfilePage({ themeMode }) {
     postalCode: "",
     country: "India",
     isDefault: false,
+    lat: null,
+    lng: null,
   });
 
   const fetchProfile = async () => {
@@ -173,6 +176,8 @@ export default function ProfilePage({ themeMode }) {
         postalCode: addr.postalCode,
         country: addr.country || "India",
         isDefault: addr.isDefault || false,
+        lat: addr.location?.coordinates ? addr.location.coordinates[1] : null,
+        lng: addr.location?.coordinates ? addr.location.coordinates[0] : null,
       });
     } else {
       setEditingAddressId(null);
@@ -183,9 +188,54 @@ export default function ProfilePage({ themeMode }) {
         postalCode: "",
         country: "India",
         isDefault: profile.addresses.length === 0,
+        lat: null,
+        lng: null,
       });
     }
     setAddressModalOpen(true);
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setErrorMsg("Geolocation is not supported by your browser.");
+      return;
+    }
+    setActionLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, { 
+            headers: { 'User-Agent': 'LocalMartApp/1.0' } 
+          });
+          const data = await res.json();
+          if (data && data.address) {
+            setAddressForm(prev => ({
+              ...prev,
+              street: data.address.road || data.address.suburb || data.address.neighbourhood || prev.street,
+              city: data.address.city || data.address.town || data.address.village || data.address.county || prev.city,
+              state: data.address.state || prev.state,
+              postalCode: data.address.postcode || prev.postalCode,
+              country: data.address.country || "India",
+              lat,
+              lng
+            }));
+            setSuccessMsg("Location detected! We've pre-filled the address details.");
+            setTimeout(() => setSuccessMsg(""), 3500);
+          }
+        } catch (err) {
+          setErrorMsg("Failed to decode coordinates into address.");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      (error) => {
+        setActionLoading(false);
+        setErrorMsg("Failed to access location. Please allow permissions.");
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const handleSaveAddress = async () => {
@@ -624,6 +674,16 @@ export default function ProfilePage({ themeMode }) {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} pt={1}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<MyLocationIcon />}
+              onClick={handleUseCurrentLocation}
+              disabled={actionLoading}
+              sx={{ borderRadius: 2, fontWeight: 700, mb: 1, py: 1 }}
+            >
+              Use Current Location
+            </Button>
             <TextField
               label="Street Address / Flat"
               fullWidth

@@ -8,8 +8,8 @@ const addressSchema = new mongoose.Schema(
     postalCode: { type: String, required: true },
     country: { type: String, default: "India" },
     location: {
-      type: { type: String, enum: ["Point"], default: "Point" },
-      coordinates: { type: [Number] }, // [longitude, latitude]
+      type: { type: String, enum: ["Point"] },
+      coordinates: { type: [Number], default: undefined }, // [longitude, latitude]
     },
     isDefault: { type: Boolean, default: false },
   },

@@ -38,6 +38,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         "PENDING",
+        "CONFIRMED",
         "ACCEPTED",
         "READY_FOR_PICKUP",
         "SEARCHING_FOR_PARTNER",

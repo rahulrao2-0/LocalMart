@@ -63,7 +63,7 @@ export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
   async (otpData, { rejectWithValue }) => {
     try {
-      const data = await apiFetch('/auth/verify-otp', {
+      const data = await apiFetch('/auth/verify-email', {
         method: 'POST',
         body: JSON.stringify(otpData),
       });

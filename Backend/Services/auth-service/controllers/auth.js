@@ -173,6 +173,13 @@ export const signup = async (req, res) => {
       });
   
       console.log(`OTP for user ${email} stored in Redis:`, otp);
+      
+      // Do not return tokens, force user to verify OTP
+      return res.status(200).json({
+        success: true,
+        message: "OTP sent to your email. Please verify.",
+        user: { email, full_name, roles: assignedRolesArray }
+      });
     }
 
     const payload = {
@@ -313,7 +320,7 @@ export const login = async (req, res) => {
 
 export const refresh = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!refreshToken) {
       return res.status(401).json({
@@ -418,7 +425,7 @@ export const refresh = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (refreshToken) {
       const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
@@ -566,7 +573,7 @@ export const verifyEmail = async (req, res) => {
 
 export const me = async (req, res) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.accessToken || (req.headers.authorization && req.headers.authorization.split(" ")[1]);
 
     if (!token) {
       return res.status(401).json({
@@ -749,6 +756,12 @@ export const sellerSignup = async (req, res) => {
         subject: "Email Verification OTP",
         html: `<p>Your OTP is ${otp}</p>`
       });
+      
+      return res.status(200).json({
+        success: true,
+        message: "OTP sent to your email. Please verify.",
+        user: { email, full_name, roles: assignedRolesArray }
+      });
     }
 
     const payload = { userId, email, roles: assignedRolesArray };
@@ -759,8 +772,6 @@ export const sellerSignup = async (req, res) => {
     const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await pool.query(`INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)`, [tokenId, userId, tokenHash, expiresAt]);
-
-
 
     await setAuthCookies(res, accessToken, refreshToken);
     return res.status(201).json({
@@ -835,6 +846,12 @@ export const deliverySignup = async (req, res) => {
         to: email,
         subject: "Email Verification OTP",
         html: `<p>Your OTP is ${otp}</p>`
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: "OTP sent to your email. Please verify.",
+        user: { email, full_name, roles: assignedRolesArray }
       });
     }
 

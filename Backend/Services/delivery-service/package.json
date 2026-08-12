@@ -1,0 +1,21 @@
+{
+  "name": "delivery-service",
+  "version": "1.0.0",
+  "description": "Delivery Service for LocalMart",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "@localmart/shared": "file:../../shared",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.0",
+    "morgan": "^1.10.0",
+    "uuid": "^14.0.1"
+  }
+}

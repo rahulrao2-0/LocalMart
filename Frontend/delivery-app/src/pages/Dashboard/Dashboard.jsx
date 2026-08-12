@@ -293,7 +293,7 @@ const Dashboard = () => {
       >
         <Card sx={{ borderRadius: 4, minWidth: 0 }}>
           <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} sx={{ mb: 1 }}>
+            <Stack direction="row" spacing={1} sx={{ mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
                   Earnings this week

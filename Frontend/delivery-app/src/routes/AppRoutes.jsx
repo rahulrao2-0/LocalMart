@@ -5,6 +5,34 @@ import { Box, Skeleton, CircularProgress, Stack, Typography } from '@mui/materia
 import SearchOffRoundedIcon from '@mui/icons-material/SearchOffRounded';
 import { fetchMe } from '../redux/features/authSlice';
 import EmptyState from '../components/EmptyState';
+import useGeolocation from '../hooks/useGeolocation';
+import { apiFetch } from '../utils/api';
+
+const LocationTracker = () => {
+  const { position, error } = useGeolocation({ watch: true });
+  const { user } = useSelector((state) => state.auth);
+  
+  useEffect(() => {
+    if (!position || !user) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        console.log(`📍 Updating location for ${user.id} to:`, position.lat, position.lng);
+        // Note: Real endpoint for location update needs to be added to backend
+        // await apiFetch(`/delivery/partner/${user.id}/location`, {
+        //   method: 'PUT',
+        //   body: JSON.stringify({ lat: position.lat, lng: position.lng })
+        // });
+      } catch (err) {
+        console.error('Failed to update location:', err);
+      }
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [position, user]);
+
+  return null;
+};
 
 // Layouts
 import AuthLayout from '../layouts/AuthLayout';
@@ -98,7 +126,9 @@ const AppRoutes = () => {
   }, [dispatch, isAuthenticated]);
 
   return (
-    <Routes>
+    <>
+      {isAuthenticated && <LocationTracker />}
+      <Routes>
       {/* Public auth routes */}
       <Route
         element={
@@ -199,6 +229,7 @@ const AppRoutes = () => {
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>
+    </>
   );
 };
 

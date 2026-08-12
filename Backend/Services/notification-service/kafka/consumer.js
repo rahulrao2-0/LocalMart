@@ -16,10 +16,10 @@ export const startConsumer = async () => {
       eachMessage: async ({ topic, partition, message }) => {
         try {
           const rawMessage = message.value.toString();
-          console.log(`📥 [KAFKA] Received message on topic [${topic}]:`, rawMessage);
-
           const event = JSON.parse(rawMessage);
-          console.log(`🔍 [KAFKA] Parsed Event Type: ${event.type || event.eventType}`);
+          console.log(`\n======================================================`);
+          console.log(`📥 [NOTIFICATION SERVICE] Received KAFKA EVENT: ${event.type || event.eventType}`);
+          console.log(`======================================================`);
 
           // 1. Process Order Events
           if (topic === TOPICS.ORDER_EVENTS) {
@@ -126,6 +126,31 @@ export const startConsumer = async () => {
                 message: `Order #${orderNumber} status was updated to ${newStatus}.`,
                 type: "ORDER_STATUS_UPDATED",
                 metadata: { orderId, orderNumber, newStatus }
+              });
+            }
+
+            else if (event.type === "DELIVERY_ASSIGNED") {
+              console.log(`🚚 [DELIVERY_ASSIGNED] Order ${orderNumber} assigned to partner ${order.deliveryPartnerId}.`);
+
+              if (order.deliveryPartnerId) {
+                await notificationService.createNotification({
+                  userId: order.deliveryPartnerId,
+                  role: "DELIVERY",
+                  title: "Delivery Assigned",
+                  message: `You have been assigned order #${orderNumber}.`,
+                  type: "DELIVERY_ASSIGNED",
+                  metadata: { orderId, orderNumber }
+                });
+              }
+              
+              await notificationService.createNotification({
+                userId: customerId,
+                role: "CUSTOMER",
+                title: "Delivery Partner Assigned",
+                message: `A delivery partner has been assigned to your order #${orderNumber}.`,
+                type: "DELIVERY_ASSIGNED",
+                metadata: { orderId, orderNumber },
+                userEmail: customerEmail
               });
             }
           }

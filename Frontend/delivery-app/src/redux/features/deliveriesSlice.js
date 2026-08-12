@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { apiFetch } from '../../utils/api';
 import {
   mockDeliveries,
   DELIVERY_STATUS,
@@ -39,15 +40,15 @@ const initialState = {
 
 export const fetchDeliveries = createAsyncThunk(
   'deliveries/fetchDeliveries',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      const response = await fetch('http://localhost:3000/api/v1/orders/delivery/orders', {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to fetch');
+      const state = getState();
+      const partnerId = state.auth.user?._id || state.auth.user?.id;
       
-      // Map backend Order statuses to Delivery App statuses
+      const data = await apiFetch(`/delivery/partner/${partnerId}/orders`, {
+        method: 'GET',
+      });
+      
       return data.data.map(order => {
         let status = DELIVERY_STATUS.NEW;
         if (order.orderStatus === 'SEARCHING_FOR_PARTNER') status = DELIVERY_STATUS.NEW;
@@ -58,28 +59,28 @@ export const fetchDeliveries = createAsyncThunk(
         if (order.orderStatus === 'CANCELLED') status = DELIVERY_STATUS.CANCELLED;
 
         return {
-          id: order._id,
+          id: order.orderId || order._id,
           orderId: order.orderNumber,
           status,
           placedAtLabel: new Date(order.createdAt).toLocaleTimeString(),
           slaMinutes: 45,
-          paymentMode: order.paymentMethod?.toLowerCase() || 'prepaid',
-          orderValue: order.totalAmount,
-          payout: Math.round(order.totalAmount * 0.1), // Mock 10%
-          distanceKm: 5.0, // Mock
-          customer: { name: 'Customer ' + order.customerId.substring(0,4), phone: '+91 9999999999', rating: 4.5 },
+          paymentMode: 'prepaid',
+          orderValue: 500, // Replace with real value if you attach order details
+          payout: 50,
+          distanceKm: 5.0,
+          customer: { name: 'Customer ' + order.customerId?.substring(0,4), phone: '+91 9999999999', rating: 4.5 },
           pickup: {
-            name: 'Store ' + order.sellerId.substring(0,4),
-            address: 'Seller Address Placeholder',
+            name: 'Store ' + order.sellerId?.substring(0,4),
+            address: order.pickupLocation?.address || 'Seller Address',
             phone: '1234567890',
-            position: { lat: 23.1852, lng: 77.0180 },
+            position: order.pickupLocation?.lat ? { lat: order.pickupLocation.lat, lng: order.pickupLocation.lng } : { lat: 23.1852, lng: 77.0180 },
           },
           drop: {
-            address: order.shippingAddress?.street || 'Customer Address',
-            landmark: order.shippingAddress?.city || 'City',
-            position: { lat: 23.2032, lng: 77.0844 },
+            address: order.dropLocation?.address || 'Customer Address',
+            landmark: 'City',
+            position: order.dropLocation?.lat ? { lat: order.dropLocation.lat, lng: order.dropLocation.lng } : { lat: 23.2032, lng: 77.0844 },
           },
-          items: order.items.map(i => ({ name: i.productName, qty: i.quantity, weight: i.weight || '-' })),
+          items: [],
           notes: 'Standard delivery',
         };
       });

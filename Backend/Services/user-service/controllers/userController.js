@@ -208,7 +208,7 @@ export const uploadProfileImage = async (req, res) => {
 export const addAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { street, city, state, postalCode, country, isDefault } = req.body;
+    const { street, city, state, postalCode, country, isDefault, lat, lng } = req.body;
 
     if (!street || !city || !state || !postalCode) {
       return res.status(400).json({
@@ -226,14 +226,38 @@ export const addAddress = async (req, res) => {
       profile.addresses.forEach((addr) => (addr.isDefault = false));
     }
 
-    profile.addresses.push({
+    let coordinates = null;
+    if (lat && lng) {
+      coordinates = [parseFloat(lng), parseFloat(lat)];
+    } else {
+      try {
+        const query = `${street}, ${city}, ${state}, ${postalCode}, ${country || 'India'}`;
+        const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+        const geoRes = await fetch(geocodeUrl, { headers: { 'User-Agent': 'LocalMartApp/1.0' } });
+        const geoData = await geoRes.json();
+        if (geoData && geoData.length > 0) {
+          coordinates = [parseFloat(geoData[0].lon), parseFloat(geoData[0].lat)];
+          console.log(`📍 Geocoded address to [${coordinates[0]}, ${coordinates[1]}]`);
+        }
+      } catch (err) {
+        console.error("Geocoding failed:", err);
+      }
+    }
+
+    const newAddress = {
       street,
       city,
       state,
       postalCode,
       country: country || "India",
       isDefault: isDefault || profile.addresses.length === 0,
-    });
+    };
+
+    if (coordinates) {
+      newAddress.location = { type: "Point", coordinates };
+    }
+
+    profile.addresses.push(newAddress);
 
     await profile.save();
 
@@ -252,7 +276,7 @@ export const updateAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { addressId } = req.params;
-    const { street, city, state, postalCode, country, isDefault } = req.body;
+    const { street, city, state, postalCode, country, isDefault, lat, lng } = req.body;
 
     const profile = await UserProfile.findOne({ userId });
     if (!profile) {
@@ -274,6 +298,24 @@ export const updateAddress = async (req, res) => {
     if (postalCode !== undefined) address.postalCode = postalCode;
     if (country !== undefined) address.country = country;
     if (isDefault !== undefined) address.isDefault = isDefault;
+
+    // Handle Location / Geocoding for Update
+    if (lat && lng) {
+      address.location = { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] };
+    } else if (street || city || state || postalCode) {
+      // Re-geocode if address parts changed
+      try {
+        const query = `${address.street}, ${address.city}, ${address.state}, ${address.postalCode}, ${address.country || 'India'}`;
+        const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+        const geoRes = await fetch(geocodeUrl, { headers: { 'User-Agent': 'LocalMartApp/1.0' } });
+        const geoData = await geoRes.json();
+        if (geoData && geoData.length > 0) {
+          address.location = { type: "Point", coordinates: [parseFloat(geoData[0].lon), parseFloat(geoData[0].lat)] };
+        }
+      } catch (err) {
+        console.error("Geocoding update failed:", err);
+      }
+    }
 
     await profile.save();
 

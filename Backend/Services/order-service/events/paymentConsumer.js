@@ -13,6 +13,8 @@ export const connectPaymentConsumer = async () => {
         try {
           const event = JSON.parse(message.value.toString());
 
+          console.log(`\n📥 [ORDER SERVICE] Received KAFKA EVENT: ${event.type}`);
+          
           if (event.type === "PAYMENT_SUCCESS") {
             const { orderId } = event.data;
             const order = await Order.findById(orderId);
@@ -23,13 +25,15 @@ export const connectPaymentConsumer = async () => {
               order.timeline.push({ status: "CONFIRMED", message: "Payment successful, order confirmed", createdAt: new Date() });
               
               const updatedOrder = await order.save();
-              console.log(`✅ Order ${orderId} confirmed after successful payment.`);
+              console.log(`✅ [ORDER SERVICE] Order ${orderId} updated to CONFIRMED after successful payment.`);
 
               // Publish Order Confirmed Event
+              console.log(`📡 [ORDER SERVICE] Publishing ORDER_CONFIRMED to ${TOPICS.ORDER_EVENTS}`);
               await publishEvent(TOPICS.ORDER_EVENTS, {
                 type: "ORDER_CONFIRMED",
                 data: updatedOrder,
               });
+              console.log(`✅ [ORDER SERVICE] ORDER_CONFIRMED published successfully.`);
             }
           }
 
@@ -43,12 +47,14 @@ export const connectPaymentConsumer = async () => {
               order.timeline.push({ status: "CANCELLED", message: `Payment failed: ${reason}`, createdAt: new Date() });
               
               const updatedOrder = await order.save();
-              console.log(`❌ Order ${orderId} cancelled due to payment failure.`);
+              console.log(`❌ [ORDER SERVICE] Order ${orderId} cancelled due to payment failure.`);
 
+              console.log(`📡 [ORDER SERVICE] Publishing ORDER_CANCELLED to ${TOPICS.ORDER_EVENTS}`);
               await publishEvent(TOPICS.ORDER_EVENTS, {
                 type: "ORDER_CANCELLED",
                 data: updatedOrder,
               });
+              console.log(`✅ [ORDER SERVICE] ORDER_CANCELLED published successfully.`);
             }
           }
 
