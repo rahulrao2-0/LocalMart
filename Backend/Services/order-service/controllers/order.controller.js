@@ -288,3 +288,25 @@ export const acceptDelivery = async (req, res, next) => {
     next(error);
   }
 };
+
+// Delivery Partner - Get Assigned Orders
+export const getDeliveryOrders = async (req, res, next) => {
+  try {
+    const deliveryPartnerId = req.user?.id || req.params.partnerId;
+    if (!deliveryPartnerId) {
+      return res.status(400).json({ success: false, message: "Delivery Partner ID is required" });
+    }
+
+    // Fetch orders assigned to this partner OR orders waiting for a partner
+    const orders = await Order.find({
+      $or: [
+        { deliveryPartnerId },
+        { orderStatus: "SEARCHING_FOR_PARTNER" }
+      ]
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    next(error);
+  }
+};

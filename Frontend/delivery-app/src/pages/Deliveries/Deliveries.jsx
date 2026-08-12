@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -49,6 +49,7 @@ import {
   advanceDelivery,
   nextStatusOf,
   ACTION_LABELS,
+  fetchDeliveries,
 } from '../../redux/features/deliveriesSlice';
 import { showToast } from '../../redux/features/uiSlice';
 import { DELIVERY_STATUS, nextStopOf } from '../../data/mockDeliveries';
@@ -351,6 +352,10 @@ export default function Deliveries() {
   const deliveries = useSelector(selectDeliveries);
   const [tab, setTab] = useState(0);
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    dispatch(fetchDeliveries());
+  }, [dispatch]);
 
   const { coords, position } = useGeolocation({ watch: false });
   const driver = position || coords;

@@ -37,9 +37,15 @@ export const register = createAsyncThunk(
     try {
       // Assuming registration endpoint for delivery partner is /auth/signup or /auth/register
       // The prompt mentioned POST /auth/signup
-      const data = await apiFetch('/auth/signup', {
+      const data = await apiFetch('/auth/delivery/signup', {
         method: 'POST',
-        body: JSON.stringify({ ...credentials, role: 'DELIVERY' }),
+        body: JSON.stringify({ 
+          full_name: credentials.name,
+          email: credentials.email,
+          phone: credentials.phone,
+          password: credentials.password,
+          role: 'DELIVERY' 
+        }),
       });
       // Signup might require OTP verification before tokens are given, or it gives tokens immediately
       if (data.accessToken && data.refreshToken) {
@@ -86,8 +92,8 @@ export const fetchMe = createAsyncThunk(
 );
 
 const initialState = {
-  user: JSON.parse(localStorage.getItem('delivery_user')) || { name: 'Demo Driver', email: 'driver@localmart.com' },
-  isAuthenticated: true, // Bypassing auth temporarily
+  user: JSON.parse(localStorage.getItem('delivery_user')) || null,
+  isAuthenticated: !!localStorage.getItem('delivery_user'), // Re-enable real auth
   loading: false,
   error: null,
 };

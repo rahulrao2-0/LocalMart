@@ -46,7 +46,7 @@ import useGeolocation from '../../hooks/useGeolocation';
 import { PIN_COLORS } from '../../components/Map/mapIcons';
 import { fetchDashboardData } from '../../redux/features/dashboardSlice';
 import { setDuty } from '../../redux/features/uiSlice';
-import { selectDeliveries } from '../../redux/features/deliveriesSlice';
+import { selectDeliveries, fetchDeliveries } from '../../redux/features/deliveriesSlice';
 import { getActiveDeliveries, getNewDeliveries, nextStopOf } from '../../data/mockDeliveries';
 import { formatCurrency, formatCompactCurrency, formatRelative } from '../../utils/format';
 import { formatDistance, orderByProximity } from '../../utils/geo';
@@ -102,6 +102,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(fetchDashboardData());
+    dispatch(fetchDeliveries());
   }, [dispatch]);
 
   const widgetMarkers = useMemo(() => {

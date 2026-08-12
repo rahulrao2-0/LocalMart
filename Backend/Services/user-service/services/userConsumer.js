@@ -1,6 +1,7 @@
 import { kafka, TOPICS, initTopics } from "@localmart/shared";
 import { UserProfile } from "../models/UserProfile.js";
 import { Seller } from "../models/Seller.js";
+import { DeliveryPartner } from "../models/DeliveryPartner.js";
 
 export const startUserConsumer = async () => {
   try {
@@ -68,6 +69,27 @@ export const startUserConsumer = async () => {
               if (phone) seller.phone = phone;
               await seller.save();
               console.log(`ℹ️ [USER SERVICE] Updated existing Seller profile in MongoDB for User ID: ${userId}`);
+            }
+          } else if (payload.eventType === "DELIVERY_CREATED") {
+            const { userId, email, fullName, phone, vehicleType, vehicleNumber } = payload;
+            console.log(`⚙️ [KAFKA CONSUMER] Processing DELIVERY_CREATED for User ID: ${userId}, Name: ${fullName}`);
+
+            let partner = await DeliveryPartner.findOne({ authUserId: userId });
+            if (!partner) {
+              partner = await DeliveryPartner.create({
+                authUserId: userId,
+                fullName: fullName || 'Unknown Partner',
+                phone: phone || '0000000000',
+                vehicleType: vehicleType || "BIKE",
+                vehicleNumber: vehicleNumber || "",
+              });
+              console.log(`✅ [USER SERVICE] Created new MongoDB DeliveryPartner document:`, partner._id);
+            } else {
+              partner.authUserId = userId;
+              if (fullName) partner.fullName = fullName;
+              if (phone) partner.phone = phone;
+              await partner.save();
+              console.log(`ℹ️ [USER SERVICE] Updated existing DeliveryPartner profile in MongoDB for User ID: ${userId}`);
             }
           } else {
             console.log(`⚠️ [KAFKA CONSUMER] Unhandled eventType: "${payload.eventType}"`);

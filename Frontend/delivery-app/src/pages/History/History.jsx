@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -34,7 +35,8 @@ import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import StatusChip from '../../components/StatusChip';
-import { mockHistory, DELIVERY_STATUS } from '../../data/mockDeliveries';
+import { selectDeliveries, fetchDeliveries } from '../../redux/features/deliveriesSlice';
+import { DELIVERY_STATUS } from '../../data/mockDeliveries';
 import { formatCurrency, formatDate, formatTime } from '../../utils/format';
 import { formatDistance, formatDuration } from '../../utils/geo';
 
@@ -143,7 +145,25 @@ const HistoryCard = ({ row, onOpen }) => (
 export default function History() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const allDeliveries = useSelector(selectDeliveries);
+  
+  useEffect(() => {
+    dispatch(fetchDeliveries());
+  }, [dispatch]);
+  
+  // Only keep delivered and cancelled ones for history
+  const historyDeliveries = useMemo(() => 
+    allDeliveries.filter(d => d.status === DELIVERY_STATUS.DELIVERED || d.status === DELIVERY_STATUS.CANCELLED).map(d => ({
+      ...d,
+      date: new Date().toISOString(), // Mocking date since it's missing in some places
+      durationMin: 20, // Mocking duration
+      rating: d.status === DELIVERY_STATUS.DELIVERED ? 5 : null,
+      customer: d.customer?.name || 'Unknown',
+      area: d.drop?.landmark || 'Local Area',
+    })), [allDeliveries]
+  );
 
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
@@ -153,7 +173,7 @@ export default function History() {
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    return mockHistory.filter((row) => {
+    return historyDeliveries.filter((row) => {
       const matchesTerm =
         !term ||
         [row.id, row.orderId, row.customer, row.area].join(' ').toLowerCase().includes(term);

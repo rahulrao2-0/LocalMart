@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
   mockDeliveries,
   DELIVERY_STATUS,
@@ -32,8 +32,62 @@ export const ACTION_LABELS = {
 };
 
 const initialState = {
-  items: mockDeliveries,
+  items: [],
+  status: 'idle',
+  error: null,
 };
+
+export const fetchDeliveries = createAsyncThunk(
+  'deliveries/fetchDeliveries',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/orders/delivery/orders', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch');
+      
+      // Map backend Order statuses to Delivery App statuses
+      return data.data.map(order => {
+        let status = DELIVERY_STATUS.NEW;
+        if (order.orderStatus === 'SEARCHING_FOR_PARTNER') status = DELIVERY_STATUS.NEW;
+        if (order.orderStatus === 'PARTNER_ASSIGNED') status = DELIVERY_STATUS.ACCEPTED;
+        if (order.orderStatus === 'HEADING_TO_STORE' || order.orderStatus === 'REACHED_STORE' || order.orderStatus === 'PICKED_UP') status = DELIVERY_STATUS.PICKED_UP;
+        if (order.orderStatus === 'HEADING_TO_CUSTOMER' || order.orderStatus === 'REACHED_LOCATION') status = DELIVERY_STATUS.IN_TRANSIT;
+        if (order.orderStatus === 'DELIVERED') status = DELIVERY_STATUS.DELIVERED;
+        if (order.orderStatus === 'CANCELLED') status = DELIVERY_STATUS.CANCELLED;
+
+        return {
+          id: order._id,
+          orderId: order.orderNumber,
+          status,
+          placedAtLabel: new Date(order.createdAt).toLocaleTimeString(),
+          slaMinutes: 45,
+          paymentMode: order.paymentMethod?.toLowerCase() || 'prepaid',
+          orderValue: order.totalAmount,
+          payout: Math.round(order.totalAmount * 0.1), // Mock 10%
+          distanceKm: 5.0, // Mock
+          customer: { name: 'Customer ' + order.customerId.substring(0,4), phone: '+91 9999999999', rating: 4.5 },
+          pickup: {
+            name: 'Store ' + order.sellerId.substring(0,4),
+            address: 'Seller Address Placeholder',
+            phone: '1234567890',
+            position: { lat: 23.1852, lng: 77.0180 },
+          },
+          drop: {
+            address: order.shippingAddress?.street || 'Customer Address',
+            landmark: order.shippingAddress?.city || 'City',
+            position: { lat: 23.2032, lng: 77.0844 },
+          },
+          items: order.items.map(i => ({ name: i.productName, qty: i.quantity, weight: i.weight || '-' })),
+          notes: 'Standard delivery',
+        };
+      });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 const deliveriesSlice = createSlice({
   name: 'deliveries',
@@ -58,8 +112,22 @@ const deliveriesSlice = createSlice({
       const delivery = state.items.find((item) => item.id === id);
       if (delivery) delivery.status = status;
     },
-    resetDeliveries: () => ({ items: mockDeliveries }),
+    resetDeliveries: () => ({ items: [], status: 'idle', error: null }),
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchDeliveries.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchDeliveries.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.items = action.payload;
+      })
+      .addCase(fetchDeliveries.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      });
+  }
 });
 
 export const {
