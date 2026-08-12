@@ -7,6 +7,10 @@ const addressSchema = new mongoose.Schema(
     state: { type: String, required: true },
     postalCode: { type: String, required: true },
     country: { type: String, default: "India" },
+    location: {
+      type: { type: String, enum: ["Point"], default: "Point" },
+      coordinates: { type: [Number] }, // [longitude, latitude]
+    },
     isDefault: { type: Boolean, default: false },
   },
   { timestamps: true }
@@ -27,5 +31,8 @@ const userProfileSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Index for Geospatial queries (e.g. shops near me based on customer address)
+userProfileSchema.index({ "addresses.location": "2dsphere" });
 
 export const UserProfile = mongoose.model("UserProfile", userProfileSchema);

@@ -14,11 +14,16 @@ const sellerAddressSchema = new mongoose.Schema(
     state: { type: String, required: true },
     country: { type: String, default: "India" },
     postalCode: { type: String, required: true },
-    latitude: { type: Number, required: true },
-    longitude: { type: Number, required: true },
+    location: {
+      type: { type: String, enum: ["Point"], default: "Point" },
+      coordinates: { type: [Number], required: true }, // [longitude, latitude]
+    },
     isDefault: { type: Boolean, default: false }
+  },
   },
   { timestamps: true }
 );
+
+sellerAddressSchema.index({ location: "2dsphere" });
 
 export const SellerAddress = mongoose.model("SellerAddress", sellerAddressSchema);

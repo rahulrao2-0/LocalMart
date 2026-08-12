@@ -20,8 +20,9 @@ const orderSchema = new mongoose.Schema(
     orderNumber: { type: String, required: true, unique: true },
     customerId: { type: String, required: true, index: true },
     sellerId: { type: String, required: true, index: true },
+    fulfillmentMode: { type: String, enum: ["DELIVERY", "PICKUP"], required: true, default: "DELIVERY" },
     items: [orderItemSchema],
-    shippingAddress: { type: Object, required: true }, // or breakdown as { address, city, etc }
+    shippingAddress: { type: Object }, // Optional, not needed for PICKUP
     subtotal: { type: Number, required: true },
     deliveryCharge: { type: Number, default: 0 },
     discount: { type: Number, default: 0 },
@@ -35,7 +36,21 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ["PENDING", "CONFIRMED", "PROCESSING", "READY_FOR_PICKUP", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"],
+      enum: [
+        "PENDING",
+        "ACCEPTED",
+        "READY_FOR_PICKUP",
+        "SEARCHING_FOR_PARTNER",
+        "PARTNER_ASSIGNED",
+        "HEADING_TO_STORE",
+        "REACHED_STORE",
+        "PICKED_UP",
+        "HEADING_TO_CUSTOMER",
+        "REACHED_LOCATION",
+        "DELIVERED",
+        "CANCELLED",
+        "RETURNED",
+      ],
       default: "PENDING",
     },
     razorpayOrderId: { type: String },

@@ -14,6 +14,7 @@ export const createOrder = async (req, res, next) => {
     const {
       items,
       shippingAddress,
+      fulfillmentMode = "DELIVERY",
       subtotal,
       deliveryCharge,
       discount,
@@ -32,6 +33,11 @@ export const createOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "No order items provided" });
     }
 
+    if (fulfillmentMode === "DELIVERY" && !shippingAddress) {
+      console.warn("⚠️ [ORDER SERVICE] Shipping address required for DELIVERY.");
+      return res.status(400).json({ success: false, message: "Shipping address is required for delivery" });
+    }
+
     const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     console.log(`📦 [ORDER SERVICE] Generating order number: ${orderNumber}`);
 
@@ -39,10 +45,11 @@ export const createOrder = async (req, res, next) => {
       orderNumber,
       customerId,
       sellerId,
+      fulfillmentMode,
       items,
       shippingAddress,
       subtotal,
-      deliveryCharge: deliveryCharge || 0,
+      deliveryCharge: fulfillmentMode === "PICKUP" ? 0 : (deliveryCharge || 0),
       discount: discount || 0,
       tax: tax || 0,
       totalAmount,
@@ -217,21 +224,57 @@ export const getSellerOrders = async (req, res, next) => {
   }
 };
 
-// Delivery Assignment
-export const assignDelivery = async (req, res, next) => {
+// Delivery Assignment Flow - Step 1: Seller Requests a Partner
+export const requestDelivery = async (req, res, next) => {
   try {
-    const { deliveryPartnerId, trackingNumber } = req.body;
+    const { deliveryPartnerId } = req.body; // The ID of the partner the seller pinged
     const order = await Order.findById(req.params.id);
 
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    if (order.orderStatus !== "READY_FOR_PICKUP") {
+      return res.status(400).json({ success: false, message: "Order must be READY_FOR_PICKUP before requesting delivery." });
+    }
+
+    order.orderStatus = "SEARCHING_FOR_PARTNER";
+    addTimelineEvent(order, "SEARCHING_FOR_PARTNER", "Seller has requested a delivery partner");
+
+    const updatedOrder = await order.save();
+
+    // In a real app, you would use Redis to ping this specific partner via Socket.io
+    // io.to(deliveryPartnerId).emit("NEW_DELIVERY_REQUEST", { order: updatedOrder });
+
+    await publishEvent(TOPICS.ORDER_EVENTS, {
+      type: "ORDER_STATUS_UPDATED",
+      data: updatedOrder,
+    });
+
+    res.status(200).json({ success: true, message: "Delivery request sent to partner", data: updatedOrder });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delivery Assignment Flow - Step 2: Partner Accepts the Request
+export const acceptDelivery = async (req, res, next) => {
+  try {
+    // In reality, this comes from req.user.id (the logged-in delivery partner)
+    const deliveryPartnerId = req.user?.id || req.body.deliveryPartnerId; 
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.orderStatus !== "SEARCHING_FOR_PARTNER") {
+      return res.status(400).json({ success: false, message: "This order is not looking for a partner anymore." });
+    }
+
     order.deliveryPartnerId = deliveryPartnerId;
-    if (trackingNumber) order.trackingNumber = trackingNumber;
-    
-    order.orderStatus = "OUT_FOR_DELIVERY";
-    addTimelineEvent(order, "OUT_FOR_DELIVERY", "Order has been assigned to a delivery partner");
+    order.orderStatus = "PARTNER_ASSIGNED";
+    addTimelineEvent(order, "PARTNER_ASSIGNED", "Delivery partner has accepted the order");
 
     const updatedOrder = await order.save();
 

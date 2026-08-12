@@ -8,7 +8,6 @@ import InventoryIcon from '@mui/icons-material/Inventory2Rounded';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCartRounded';
 import PersonIcon from '@mui/icons-material/PersonRounded';
 import NotificationsIcon from '@mui/icons-material/NotificationsRounded';
-import StorefrontIcon from '@mui/icons-material/StorefrontRounded';
 import LogoutIcon from '@mui/icons-material/LogoutRounded';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -73,19 +72,15 @@ const Sidebar = ({ mobileOpen, handleDrawerToggle, drawerWidth }) => {
         }}
       >
         <Box
+          component="img"
+          src="/favicon.svg"
+          alt="LocalMart Seller Hub"
           sx={{
             width: 38,
             height: 38,
-            borderRadius: '12px',
-            display: 'grid',
-            placeItems: 'center',
             flexShrink: 0,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-            boxShadow: `0 6px 16px ${alpha(theme.palette.primary.main, 0.35)}`,
           }}
-        >
-          <StorefrontIcon sx={{ color: '#fff', fontSize: 21 }} />
-        </Box>
+        />
         <Box sx={{ minWidth: 0 }}>
           <Typography
             variant="subtitle1"
