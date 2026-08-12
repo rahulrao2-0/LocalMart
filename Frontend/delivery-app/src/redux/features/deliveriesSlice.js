@@ -64,26 +64,76 @@ export const fetchDeliveries = createAsyncThunk(
           status,
           placedAtLabel: new Date(order.createdAt).toLocaleTimeString(),
           slaMinutes: 45,
-          paymentMode: 'prepaid',
-          orderValue: 500, // Replace with real value if you attach order details
-          payout: 50,
-          distanceKm: 5.0,
-          customer: { name: 'Customer ' + order.customerId?.substring(0,4), phone: '+91 9999999999', rating: 4.5 },
+          paymentMode: order.paymentMethod || 'prepaid',
+          orderValue: order.totalAmount || 500,
+          payout: order.deliveryCharge || 50,
+          distanceKm: 5.0, // To be calculated with real coordinates
+          customer: { 
+            name: order.shippingAddress?.fullName || order.customer?.name || 'Customer', 
+            phone: order.shippingAddress?.phone || '+91 9999999999', 
+            rating: 4.5 
+          },
           pickup: {
-            name: 'Store ' + order.sellerId?.substring(0,4),
-            address: order.pickupLocation?.address || 'Seller Address',
+            name: 'LocalMart Store',
+            address: 'Store Address', // Ideally from seller service
             phone: '1234567890',
-            position: order.pickupLocation?.lat ? { lat: order.pickupLocation.lat, lng: order.pickupLocation.lng } : { lat: 23.1852, lng: 77.0180 },
+            position: { lat: 23.1852, lng: 77.0180 },
           },
           drop: {
-            address: order.dropLocation?.address || 'Customer Address',
-            landmark: 'City',
-            position: order.dropLocation?.lat ? { lat: order.dropLocation.lat, lng: order.dropLocation.lng } : { lat: 23.2032, lng: 77.0844 },
+            address: order.shippingAddress ? `${order.shippingAddress.street}, ${order.shippingAddress.city}` : 'Customer Address',
+            landmark: order.shippingAddress?.state || 'City',
+            position: order.shippingAddress?.location?.coordinates?.length === 2 
+              ? { lat: order.shippingAddress.location.coordinates[1], lng: order.shippingAddress.location.coordinates[0] } 
+              : { lat: 23.2032, lng: 77.0844 },
           },
-          items: [],
+          items: order.items || [],
           notes: 'Standard delivery',
         };
       });
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const acceptDeliveryThunk = createAsyncThunk(
+  'deliveries/accept',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      await apiFetch(`/orders/${orderId}/accept-delivery`, { method: 'PUT' });
+      return orderId;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const rejectDeliveryThunk = createAsyncThunk(
+  'deliveries/reject',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      await apiFetch(`/orders/${orderId}/reject-delivery`, { method: 'PUT' });
+      return orderId;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateDeliveryStatusThunk = createAsyncThunk(
+  'deliveries/updateStatus',
+  async ({ orderId, status }, { rejectWithValue }) => {
+    try {
+      let nextBackendStatus = 'PARTNER_ASSIGNED';
+      if (status === DELIVERY_STATUS.PICKED_UP) nextBackendStatus = 'PICKED_UP';
+      else if (status === DELIVERY_STATUS.IN_TRANSIT) nextBackendStatus = 'HEADING_TO_CUSTOMER';
+      else if (status === DELIVERY_STATUS.DELIVERED) nextBackendStatus = 'DELIVERED';
+      
+      await apiFetch(`/orders/${orderId}/status`, { 
+        method: 'PUT',
+        body: JSON.stringify({ orderStatus: nextBackendStatus })
+      });
+      return { orderId, status };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -127,14 +177,22 @@ const deliveriesSlice = createSlice({
       .addCase(fetchDeliveries.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      .addCase(acceptDeliveryThunk.fulfilled, (state, action) => {
+        const delivery = state.items.find((item) => item.id === action.payload);
+        if (delivery) delivery.status = DELIVERY_STATUS.ACCEPTED;
+      })
+      .addCase(rejectDeliveryThunk.fulfilled, (state, action) => {
+        state.items = state.items.filter((item) => item.id !== action.payload);
+      })
+      .addCase(updateDeliveryStatusThunk.fulfilled, (state, action) => {
+        const delivery = state.items.find((item) => item.id === action.payload.orderId);
+        if (delivery) delivery.status = action.payload.status;
       });
   }
 });
 
 export const {
-  acceptDelivery,
-  rejectDelivery,
-  advanceDelivery,
   setDeliveryStatus,
   resetDeliveries,
 } = deliveriesSlice.actions;

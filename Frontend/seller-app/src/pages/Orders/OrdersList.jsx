@@ -18,24 +18,50 @@ import EmptyState from '../../components/common/EmptyState';
 const statusColors = {
   'PENDING': 'warning',
   'CONFIRMED': 'info',
-  'PROCESSING': 'secondary',
-  'OUT_FOR_DELIVERY': 'primary',
+  'ACCEPTED': 'info',
+  'READY_FOR_PICKUP': 'secondary',
+  'SEARCHING_FOR_PARTNER': 'warning',
+  'PARTNER_ASSIGNED': 'primary',
+  'HEADING_TO_STORE': 'primary',
+  'REACHED_STORE': 'primary',
+  'PICKED_UP': 'primary',
+  'HEADING_TO_CUSTOMER': 'primary',
+  'REACHED_LOCATION': 'primary',
   'DELIVERED': 'success',
-  'CANCELLED': 'error'
+  'CANCELLED': 'error',
+  'RETURNED': 'error',
 };
 
 const STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'CONFIRMED', label: 'Confirmed' },
-  { value: 'PROCESSING', label: 'Processing' },
-  { value: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
+  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'READY_FOR_PICKUP', label: 'Processing' },
+  { value: 'SEARCHING_FOR_PARTNER', label: 'Searching for Partner' },
+  { value: 'PARTNER_ASSIGNED', label: 'Partner Assigned' },
+  { value: 'HEADING_TO_STORE', label: 'Heading to Store' },
+  { value: 'REACHED_STORE', label: 'Partner Reached Store' },
+  { value: 'PICKED_UP', label: 'Picked Up' },
+  { value: 'HEADING_TO_CUSTOMER', label: 'Out for Delivery' },
+  { value: 'REACHED_LOCATION', label: 'Arrived at Customer' },
   { value: 'DELIVERED', label: 'Delivered' },
-  { value: 'CANCELLED', label: 'Cancel Order' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'RETURNED', label: 'Returned' }
+];
+
+// The seller should only manually transition orders between these core states.
+// Automated states (like HEADING_TO_CUSTOMER) should be driven by the Delivery Partner.
+const SELLER_SELECTABLE_OPTIONS = [
+  'PENDING', 'CONFIRMED', 'ACCEPTED', 'READY_FOR_PICKUP', 'CANCELLED'
 ];
 
 const FILTERS = [
   { value: 'ALL', label: 'All' },
-  ...STATUS_OPTIONS.slice(0, 5),
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'READY_FOR_PICKUP', label: 'Processing' },
+  { value: 'HEADING_TO_CUSTOMER', label: 'Out for Delivery' },
+  { value: 'DELIVERED', label: 'Delivered' },
   { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
@@ -103,6 +129,7 @@ const StatusSelect = ({ status, orderId, onChange, fullWidth }) => (
           value={option.value}
           sx={{
             gap: 1.25,
+            display: (SELLER_SELECTABLE_OPTIONS.includes(option.value) || option.value === status) ? 'flex' : 'none',
             ...(option.value === 'CANCELLED' && { color: 'error.main', fontWeight: 700 }),
           }}
         >
@@ -230,7 +257,13 @@ const OrdersList = () => {
     const map = { ALL: items.length };
     items.forEach((order) => {
       const status = (order.orderStatus || order.status || 'PENDING').toUpperCase();
-      map[status] = (map[status] || 0) + 1;
+      let parentStatus = status;
+      if (['CONFIRMED', 'ACCEPTED'].includes(status)) parentStatus = 'CONFIRMED';
+      else if (['READY_FOR_PICKUP', 'SEARCHING_FOR_PARTNER', 'PARTNER_ASSIGNED', 'HEADING_TO_STORE', 'REACHED_STORE'].includes(status)) parentStatus = 'READY_FOR_PICKUP';
+      else if (['PICKED_UP', 'HEADING_TO_CUSTOMER', 'REACHED_LOCATION'].includes(status)) parentStatus = 'HEADING_TO_CUSTOMER';
+      else if (['CANCELLED', 'RETURNED'].includes(status)) parentStatus = 'CANCELLED';
+
+      map[parentStatus] = (map[parentStatus] || 0) + 1;
     });
     return map;
   }, [items]);
@@ -239,7 +272,26 @@ const OrdersList = () => {
     const query = searchQuery.trim().toLowerCase();
     return items.filter((order) => {
       const status = (order.orderStatus || order.status || 'PENDING').toUpperCase();
-      if (statusFilter !== 'ALL' && status !== statusFilter) return false;
+      
+      let matchesFilter = false;
+      if (statusFilter === 'ALL') {
+        matchesFilter = true;
+      } else if (statusFilter === 'PENDING') {
+        matchesFilter = status === 'PENDING';
+      } else if (statusFilter === 'CONFIRMED') {
+        matchesFilter = ['CONFIRMED', 'ACCEPTED'].includes(status);
+      } else if (statusFilter === 'READY_FOR_PICKUP') {
+        matchesFilter = ['READY_FOR_PICKUP', 'SEARCHING_FOR_PARTNER', 'PARTNER_ASSIGNED', 'HEADING_TO_STORE', 'REACHED_STORE'].includes(status);
+      } else if (statusFilter === 'HEADING_TO_CUSTOMER') {
+        matchesFilter = ['PICKED_UP', 'HEADING_TO_CUSTOMER', 'REACHED_LOCATION'].includes(status);
+      } else if (statusFilter === 'DELIVERED') {
+        matchesFilter = status === 'DELIVERED';
+      } else if (statusFilter === 'CANCELLED') {
+        matchesFilter = ['CANCELLED', 'RETURNED'].includes(status);
+      }
+
+      if (!matchesFilter) return false;
+
       if (!query) return true;
       const orderNum = (order.orderNumber || order.id || order._id || '').toLowerCase();
       const customer = (order.customer?.name || order.shippingAddress?.fullName || '').toLowerCase();

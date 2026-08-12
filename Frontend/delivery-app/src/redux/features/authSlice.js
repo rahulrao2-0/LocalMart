@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { apiFetch, setTokens, clearTokens } from '../../utils/api';
+import { apiFetch, clearTokens } from '../../utils/api';
 
 export const login = createAsyncThunk(
   'auth/login',
@@ -9,8 +9,6 @@ export const login = createAsyncThunk(
         method: 'POST',
         body: JSON.stringify(credentials),
       });
-      setTokens(data.accessToken, data.refreshToken);
-      localStorage.setItem('delivery_user', JSON.stringify(data.user));
       return data;
     } catch (error) {
       return rejectWithValue(error.message || 'Login failed');
@@ -47,11 +45,6 @@ export const register = createAsyncThunk(
           role: 'DELIVERY' 
         }),
       });
-      // Signup might require OTP verification before tokens are given, or it gives tokens immediately
-      if (data.accessToken && data.refreshToken) {
-        setTokens(data.accessToken, data.refreshToken);
-        localStorage.setItem('delivery_user', JSON.stringify(data.user));
-      }
       return data;
     } catch (error) {
       return rejectWithValue(error.message || 'Registration failed');
@@ -67,10 +60,6 @@ export const verifyOtp = createAsyncThunk(
         method: 'POST',
         body: JSON.stringify(otpData),
       });
-      if (data.accessToken && data.refreshToken) {
-        setTokens(data.accessToken, data.refreshToken);
-        localStorage.setItem('delivery_user', JSON.stringify(data.user));
-      }
       return data;
     } catch (error) {
       return rejectWithValue(error.message || 'OTP Verification failed');
@@ -83,7 +72,6 @@ export const fetchMe = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const data = await apiFetch('/auth/me', { method: 'GET' });
-      localStorage.setItem('delivery_user', JSON.stringify(data.user));
       return data;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to fetch user profile');
@@ -92,9 +80,9 @@ export const fetchMe = createAsyncThunk(
 );
 
 const initialState = {
-  user: JSON.parse(localStorage.getItem('delivery_user')) || null,
-  isAuthenticated: !!localStorage.getItem('delivery_user'), // Re-enable real auth
-  loading: false,
+  user: null,
+  isAuthenticated: false,
+  loading: true,
   error: null,
 };
 
@@ -167,6 +155,7 @@ const authSlice = createSlice({
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.loading = false;
+        state.isAuthenticated = true;
         state.user = action.payload.user;
       })
       .addCase(fetchMe.rejected, (state, action) => {

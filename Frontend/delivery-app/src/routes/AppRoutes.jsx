@@ -120,10 +120,8 @@ const AppRoutes = () => {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchMe());
-    }
-  }, [dispatch, isAuthenticated]);
+    dispatch(fetchMe());
+  }, [dispatch]);
 
   return (
     <>

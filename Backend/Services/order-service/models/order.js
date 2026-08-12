@@ -56,6 +56,7 @@ const orderSchema = new mongoose.Schema(
     },
     razorpayOrderId: { type: String },
     deliveryPartnerId: { type: String },
+    rejectedBy: [{ type: String }],
     trackingNumber: { type: String },
     timeline: [timelineSchema],
   },

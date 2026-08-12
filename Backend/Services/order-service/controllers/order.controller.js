@@ -297,15 +297,39 @@ export const getDeliveryOrders = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Delivery Partner ID is required" });
     }
 
-    // Fetch orders assigned to this partner OR orders waiting for a partner
+    // Fetch orders assigned to this partner OR orders waiting for a partner (and not rejected by this partner)
     const orders = await Order.find({
       $or: [
         { deliveryPartnerId },
-        { orderStatus: "SEARCHING_FOR_PARTNER" }
+        { orderStatus: "SEARCHING_FOR_PARTNER", rejectedBy: { $ne: deliveryPartnerId } }
       ]
     }).sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delivery Partner - Reject Delivery
+export const rejectDelivery = async (req, res, next) => {
+  try {
+    const deliveryPartnerId = req.user?.id || req.body.deliveryPartnerId; 
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.orderStatus !== "SEARCHING_FOR_PARTNER") {
+      return res.status(400).json({ success: false, message: "This order is not looking for a partner anymore." });
+    }
+
+    if (!order.rejectedBy) order.rejectedBy = [];
+    order.rejectedBy.push(deliveryPartnerId);
+
+    const updatedOrder = await order.save();
+    res.status(200).json({ success: true, data: updatedOrder });
   } catch (error) {
     next(error);
   }

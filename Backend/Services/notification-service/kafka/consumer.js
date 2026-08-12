@@ -115,8 +115,7 @@ export const startConsumer = async () => {
                 title: `Order Status: ${newStatus}`,
                 message: `Your order #${orderNumber} is now ${newStatus}.`,
                 type: "ORDER_STATUS_UPDATED",
-                metadata: { orderId, orderNumber, newStatus },
-                userEmail: customerEmail
+                metadata: { orderId, orderNumber, newStatus }
               });
 
               await notificationService.createNotification({

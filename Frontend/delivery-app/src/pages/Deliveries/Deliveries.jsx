@@ -44,12 +44,12 @@ import useGeolocation from '../../hooks/useGeolocation';
 import { PIN_COLORS } from '../../components/Map/mapIcons';
 import {
   selectDeliveries,
-  acceptDelivery,
-  rejectDelivery,
-  advanceDelivery,
   nextStatusOf,
   ACTION_LABELS,
   fetchDeliveries,
+  acceptDeliveryThunk,
+  rejectDeliveryThunk,
+  updateDeliveryStatusThunk,
 } from '../../redux/features/deliveriesSlice';
 import { showToast } from '../../redux/features/uiSlice';
 import { DELIVERY_STATUS, nextStopOf } from '../../data/mockDeliveries';
@@ -320,7 +320,10 @@ const DeliveryCard = ({ delivery, driver, onAccept, onReject, onAdvance, onOpen 
                 size="small"
                 variant="outlined"
                 color="error"
-                onClick={onReject}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch(rejectDeliveryThunk(delivery.id));
+                }}
                 startIcon={<CloseRoundedIcon />}
                 sx={{ order: { xs: 2, sm: 2 } }}
               >
@@ -332,7 +335,15 @@ const DeliveryCard = ({ delivery, driver, onAccept, onReject, onAdvance, onOpen 
               <Button
                 size="small"
                 variant="contained"
-                onClick={isNew ? onAccept : onAdvance}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = nextStatusOf(delivery.status);
+                  if (delivery.status === DELIVERY_STATUS.NEW) {
+                    dispatch(acceptDeliveryThunk(delivery.id));
+                  } else if (next) {
+                    dispatch(updateDeliveryStatusThunk({ orderId: delivery.id, status: next }));
+                  }
+                }}
                 startIcon={<CheckCircleRoundedIcon />}
                 sx={{ order: { xs: 1, sm: 3 } }}
               >

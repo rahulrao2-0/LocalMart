@@ -8,7 +8,8 @@ import {
   getSellerOrders,
   requestDelivery,
   acceptDelivery,
-  getDeliveryOrders
+  getDeliveryOrders,
+  rejectDelivery
 } from "../controllers/order.controller.js";
 
 import { checkIdempotency } from "../middleware/idempotency.js";
@@ -28,5 +29,6 @@ router.put("/:id/status", authMiddleware, updateOrderStatus);
 router.put("/:id/cancel", authMiddleware, cancelOrder);
 router.put("/:id/request-delivery", authMiddleware, requestDelivery);
 router.put("/:id/accept-delivery", authMiddleware, acceptDelivery);
+router.put("/:id/reject-delivery", authMiddleware, rejectDelivery);
 
 export default router;

@@ -308,6 +308,8 @@ export const login = async (req, res) => {
       success: true,
       message: "Login successful.",
       user,
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     console.error("Login Error:", error);
@@ -413,6 +415,8 @@ export const refresh = async (req, res) => {
       success: true,
       message: "Tokens refreshed successfully.",
       user,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
     });
   } catch (error) {
     console.error("Refresh Token Error:", error);
@@ -566,6 +570,8 @@ export const verifyEmail = async (req, res) => {
         success: true,
         message: "Email verified successfully.",
         user: userData,
+        accessToken,
+        refreshToken,
       });
     }
 
