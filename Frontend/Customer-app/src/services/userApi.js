@@ -25,11 +25,24 @@ export const uploadAvatarApi = async (formData) => {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to upload profile picture");
+    let message = "Failed to upload profile picture";
+    try {
+      const error = await response.json();
+      message = error.message || error.error || message;
+    } catch {
+      try {
+        const text = await response.text();
+        if (text) message = text;
+      } catch {}
+    }
+    throw new Error(message);
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 };
 
 // Manage Addresses

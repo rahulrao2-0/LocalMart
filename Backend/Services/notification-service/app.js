@@ -4,7 +4,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { connectDB } from './config/db.js';
 import notificationRoutes from './routes/notification.routes.js';
-import { errorHandler } from './utils/errorHandler.js';
+import { errorHandler } from '@localmart/shared';
 import { init as initSocket } from './services/socket.service.js';
 import { startConsumer } from './kafka/consumer.js';
 

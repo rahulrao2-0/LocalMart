@@ -1,6 +1,6 @@
 import cartRepository from '../repositories/cartRepository.js';
 import axios from 'axios';
-import { publishEvent, TOPICS } from '@localmart/shared';
+import { publishEvent, TOPICS, BadRequestError, NotFoundError } from '@localmart/shared';
 
 class CartService {
     async getCart(customerId) {
@@ -17,7 +17,7 @@ class CartService {
             const productRes = await axios.get(`${process.env.PRODUCT_SERVICE_URL}/${itemData.productId}`);
             const product = productRes.data;
             if (!product || !product.active || product.stock < itemData.quantity) {
-                throw new Error('Product not available or insufficient stock');
+                throw new BadRequestError('Product not available or insufficient stock', 'INSUFFICIENT_STOCK');
             }
             
             // Check price mismatch if necessary, or just use product price
@@ -26,7 +26,8 @@ class CartService {
             itemData.sellerId = product.sellerId;
             itemData.productImage = product.image;
         } catch (err) {
-            throw new Error('Error validating product: ' + err.message);
+            if (err instanceof BadRequestError || err instanceof NotFoundError) throw err;
+            throw new BadRequestError('Error validating product: ' + err.message, 'PRODUCT_VALIDATION_FAILED');
         }
 
         let cart = await cartRepository.findCartByCustomerId(customerId);
@@ -56,10 +57,10 @@ class CartService {
 
     async updateItemQuantity(customerId, productId, quantity) {
         const cart = await cartRepository.findCartByCustomerId(customerId);
-        if (!cart) throw new Error('Cart not found');
+        if (!cart) throw new NotFoundError('Cart not found', 'CART_NOT_FOUND');
 
         const item = cart.Items.find(item => item.ProductId === productId);
-        if (!item) throw new Error('Item not found in cart');
+        if (!item) throw new NotFoundError('Item not found in cart', 'ITEM_NOT_FOUND');
 
         if (quantity <= 0) {
             cart.Items = cart.Items.filter(item => item.ProductId !== productId);
@@ -74,7 +75,7 @@ class CartService {
 
     async removeItem(customerId, productId) {
         const cart = await cartRepository.findCartByCustomerId(customerId);
-        if (!cart) throw new Error('Cart not found');
+        if (!cart) throw new NotFoundError('Cart not found', 'CART_NOT_FOUND');
 
         cart.Items = cart.Items.filter(item => item.ProductId !== productId);
         this.updateTotals(cart);
@@ -94,7 +95,7 @@ class CartService {
 
     async checkoutCart(customerId) {
         const cart = await cartRepository.findCartByCustomerId(customerId);
-        if (!cart || cart.Items.length === 0) throw new Error('Cart is empty');
+        if (!cart || cart.Items.length === 0) throw new BadRequestError('Cart is empty', 'CART_EMPTY');
 
         await publishEvent(TOPICS.CART_CHECKED_OUT, {
             CustomerId: customerId,

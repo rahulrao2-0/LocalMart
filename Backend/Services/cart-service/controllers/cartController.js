@@ -1,57 +1,57 @@
 import cartService from '../services/cartService.js';
 
 class CartController {
-    async getCart(req, res) {
+    async getCart(req, res, next) {
         try {
             const cart = await cartService.getCart(req.user.userId);
             res.json(cart);
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            next(err);
         }
     }
 
-    async addItem(req, res) {
+    async addItem(req, res, next) {
         try {
             const cart = await cartService.addItemToCart(req.user.userId, req.body);
             res.status(201).json(cart);
         } catch (err) {
-            res.status(400).json({ error: err.message });
+            next(err);
         }
     }
 
-    async updateItemQuantity(req, res) {
+    async updateItemQuantity(req, res, next) {
         try {
             const cart = await cartService.updateItemQuantity(req.user.userId, req.params.productId, req.body.quantity);
             res.json(cart);
         } catch (err) {
-            res.status(400).json({ error: err.message });
+            next(err);
         }
     }
 
-    async removeItem(req, res) {
+    async removeItem(req, res, next) {
         try {
             const cart = await cartService.removeItem(req.user.userId, req.params.productId);
             res.json(cart);
         } catch (err) {
-            res.status(400).json({ error: err.message });
+            next(err);
         }
     }
 
-    async clearCart(req, res) {
+    async clearCart(req, res, next) {
         try {
             const cart = await cartService.clearCart(req.user.userId);
             res.json(cart);
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            next(err);
         }
     }
 
-    async checkout(req, res) {
+    async checkout(req, res, next) {
         try {
             const result = await cartService.checkoutCart(req.user.userId);
             res.json(result);
         } catch (err) {
-            res.status(400).json({ error: err.message });
+            next(err);
         }
     }
 }

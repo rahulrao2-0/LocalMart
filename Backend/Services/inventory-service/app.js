@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import inventoryRoutes from './routes/inventory.routes.js';
-import errorHandler from './middlewares/error.middleware.js';
+import { errorHandler } from '@localmart/shared';
 
 const app = express();
 
@@ -18,3 +18,4 @@ app.use('/inventory', inventoryRoutes);
 app.use(errorHandler);
 
 export default app;
+

@@ -3,6 +3,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import cartRoutes from './routes/cartRoutes.js';
+import { errorHandler } from '@localmart/shared';
 
 const app = express();
 
@@ -11,4 +12,7 @@ app.use(express.json());
 
 app.use('/cart', cartRoutes);
 
+app.use(errorHandler);
+
 export default app;
+

@@ -47,9 +47,24 @@ export const apiRequest = async (
 
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message);
+    let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      try {
+        const text = await response.text();
+        if (text) errorMessage = text;
+      } catch {
+        // Fallback to HTTP status text
+      }
+    }
+    throw new Error(errorMessage);
   }
 
-  return response.json();
-};
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};

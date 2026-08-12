@@ -1,5 +1,5 @@
 import inventoryRepository from '../repositories/inventory.repository.js';
-import { redis, publishEvent, TOPICS } from '@localmart/shared';
+import { redis, publishEvent, TOPICS, BadRequestError } from '@localmart/shared';
 
 class InventoryService {
     async getInventory(productId) {
@@ -43,7 +43,7 @@ class InventoryService {
     async decreaseStock(productId, quantity) {
         const inventory = await this.getInventory(productId);
         if (inventory.CurrentStock < quantity) {
-            throw new Error('Not enough current stock to decrease');
+            throw new BadRequestError('Not enough current stock to decrease', 'INSUFFICIENT_CURRENT_STOCK');
         }
         inventory.CurrentStock -= quantity;
         await inventoryRepository.update(inventory);
@@ -55,7 +55,7 @@ class InventoryService {
     async reserveStock(productId, quantity) {
         const inventory = await this.getInventory(productId);
         if (inventory.AvailableStock < quantity) {
-            throw new Error('Not enough available stock to reserve');
+            throw new BadRequestError('Not enough available stock to reserve', 'INSUFFICIENT_AVAILABLE_STOCK');
         }
         inventory.ReservedStock += quantity;
         await inventoryRepository.update(inventory);
@@ -67,7 +67,7 @@ class InventoryService {
     async releaseStock(productId, quantity) {
         const inventory = await this.getInventory(productId);
         if (inventory.ReservedStock < quantity) {
-            throw new Error('Not enough reserved stock to release');
+            throw new BadRequestError('Not enough reserved stock to release', 'INVALID_RESERVED_STOCK');
         }
         inventory.ReservedStock -= quantity;
         await inventoryRepository.update(inventory);
