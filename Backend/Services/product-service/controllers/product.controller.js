@@ -8,6 +8,7 @@ import { publishEvent, TOPICS, redis } from "@localmart/shared";
 export const getProducts = async (req, res) => {
   try {
     const { keyword, category, status, sellerId, page, limit } = req.query;
+    console.log("Seller=Id in product-service",sellerId)
 
     // Set defaults: page 1, limit 2
     const pageNum = Number(page) || 1;

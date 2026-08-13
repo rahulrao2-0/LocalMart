@@ -12,7 +12,7 @@ const startKafkaConsumer = async () => {
         ];
 
         for (const topic of topics) {
-            await consumer.subscribe({ topic, fromBeginning: false });
+            await consumer.subscribe({ topics: [topic], fromBeginning: false });
         }
 
         await consumer.run({

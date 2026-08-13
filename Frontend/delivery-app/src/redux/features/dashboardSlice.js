@@ -1,35 +1,16 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { apiFetch } from '../../utils/api';
 import { mockHistory } from '../../data/mockDeliveries';
 
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchData',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      // Real endpoint (GET /delivery/dashboard) isn't live yet, so this resolves
-      // demo figures. Amounts are in INR to match the rest of the platform.
-      // const data = await apiFetch('/delivery/dashboard', { method: 'GET' });
-      // return data;
-
-      return {
-        stats: {
-          todaysDeliveries: 0,
-          pendingDeliveries: 0,
-          completedDeliveries: 0,
-          todaysEarnings: 0,
-          weeklyEarnings: 0,
-          monthlyEarnings: 0,
-          averageRating: 0,
-          totalRatings: 0,
-          acceptanceRate: 0,
-          onTimeRate: 0,
-          hoursOnline: 0,
-          distanceKm: 0,
-          currentStatus: 'Active',
-          todayTarget: 1500,
-        },
-        recentDeliveries: [],
-        chartData: [],
-      };
+      const state = getState();
+      const partnerId = state.auth.user?._id || state.auth.user?.id;
+      
+      const data = await apiFetch(`/delivery/partner/${partnerId}/dashboard`, { method: 'GET' });
+      return data.data;
     } catch (error) {
       return rejectWithValue(error.message || 'Failed to load dashboard data');
     }

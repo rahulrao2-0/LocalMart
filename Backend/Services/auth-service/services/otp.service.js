@@ -1,15 +1,19 @@
 import { redis } from "@localmart/shared";
 
-export const storeOTP = async (email, otp) => {
-    await redis.set(`otp:${email}`, otp, {
-        EX: 300,
-    });
-};
+class OtpService {
+    async storeOTP(email, otp) {
+        await redis.set(`otp:${email}`, otp, {
+            EX: 300,
+        });
+    }
 
-export const getOTP = async (email) => {
-    return await redis.get(`otp:${email}`);
-};
+    async getOTP(email) {
+        return await redis.get(`otp:${email}`);
+    }
 
-export const deleteOTP = async (email) => {
-    await redis.del(`otp:${email}`);
-};
+    async deleteOTP(email) {
+        await redis.del(`otp:${email}`);
+    }
+}
+
+export default new OtpService();

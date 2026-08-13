@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import morgan from "morgan";
 import mongoose from "mongoose";
+import cookieParser from "cookie-parser";
 import deliveryRoutes from "./routes/delivery.routes.js";
 import { startDeliveryConsumer } from "./kafka/deliveryConsumer.js";
 
@@ -15,6 +16,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(morgan("dev"));
 
 app.use("/api/v1/delivery", deliveryRoutes);

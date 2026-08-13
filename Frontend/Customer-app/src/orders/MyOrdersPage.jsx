@@ -61,11 +61,19 @@ const getActiveStep = (status) => {
     case "PENDING":
       return 0;
     case "CONFIRMED":
+    case "ACCEPTED":
       return 1;
     case "PROCESSING":
     case "READY_FOR_PICKUP":
+    case "SEARCHING_FOR_PARTNER":
+    case "PARTNER_ASSIGNED":
+    case "HEADING_TO_STORE":
+    case "REACHED_STORE":
       return 2;
     case "OUT_FOR_DELIVERY":
+    case "PICKED_UP":
+    case "HEADING_TO_CUSTOMER":
+    case "REACHED_LOCATION":
       return 3;
     case "DELIVERED":
       return 4;
@@ -75,20 +83,21 @@ const getActiveStep = (status) => {
 };
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case "DELIVERED":
-      return "success";
-    case "CONFIRMED":
-    case "PROCESSING":
-    case "OUT_FOR_DELIVERY":
-      return "primary";
-    case "PENDING":
-      return "warning";
-    case "CANCELLED":
-      return "error";
-    default:
-      return "default";
-  }
+  if (status === "DELIVERED") return "success";
+  if (["PENDING", "SEARCHING_FOR_PARTNER"].includes(status)) return "warning";
+  if (status === "CANCELLED" || status === "RETURNED") return "error";
+  return "primary";
+};
+
+const formatStatus = (status) => {
+  if (!status) return "PENDING";
+  if (status === "PARTNER_ASSIGNED") return "PARTNER ASSIGNED";
+  if (status === "HEADING_TO_STORE") return "PARTNER EN ROUTE TO STORE";
+  if (status === "REACHED_STORE") return "PARTNER AT STORE";
+  if (status === "PICKED_UP") return "ORDER PICKED UP";
+  if (status === "HEADING_TO_CUSTOMER") return "OUT FOR DELIVERY";
+  if (status === "REACHED_LOCATION") return "ARRIVED AT DESTINATION";
+  return status.replace(/_/g, " ");
 };
 
 export default function MyOrdersPage({ themeMode }) {
@@ -247,7 +256,7 @@ export default function MyOrdersPage({ themeMode }) {
               const orderNum = order.orderNumber || `#${orderId.substring(0, 8).toUpperCase()}`;
               const isCancelled = order.orderStatus === "CANCELLED";
               const isDelivered = order.orderStatus === "DELIVERED";
-              const canCancel = !isCancelled && !isDelivered && order.orderStatus !== "OUT_FOR_DELIVERY";
+              const canCancel = !isCancelled && !isDelivered && !["OUT_FOR_DELIVERY", "PICKED_UP", "HEADING_TO_CUSTOMER", "REACHED_LOCATION"].includes(order.orderStatus);
               const isExpanded = !!expandedTracker[orderId];
               const activeStep = getActiveStep(order.orderStatus);
 
@@ -274,7 +283,7 @@ export default function MyOrdersPage({ themeMode }) {
                         </Typography>
                         <Chip
                           icon={isCancelled ? <CancelIcon /> : <CheckCircleIcon />}
-                          label={order.orderStatus || "PENDING"}
+                          label={formatStatus(order.orderStatus)}
                           color={getStatusColor(order.orderStatus)}
                           size="small"
                           sx={{ fontWeight: 700, borderRadius: 2 }}

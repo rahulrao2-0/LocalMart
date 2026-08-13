@@ -74,6 +74,9 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [shippingAddressStr, setShippingAddressStr] = useState(
+    user?.addresses?.[0]?.street || user?.address || ""
+  );
 
   // Calculate Subtotal & Fees
   const subtotal = cart.reduce((acc, item) => acc + (item.shop?.price || 0) * item.quantity, 0);
@@ -138,14 +141,22 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
       const customerName = user?.fullName || user?.full_name || user?.username || user?.name || "Customer";
       const customerEmail = user?.email || "";
 
+      if (deliveryMethod === "delivery" && (!shippingAddressStr || shippingAddressStr.trim() === "")) {
+        setPromoError("Please add a shipping address in your profile to continue with delivery.");
+        setIsCheckingOut(false);
+        return;
+      }
+
       const defaultAddress = {
         fullName: customerName,
         name: customerName,
         email: customerEmail,
-        street: user?.addresses?.[0]?.street || user?.address || "123 Local Street",
+        street: shippingAddressStr,
         city: user?.addresses?.[0]?.city || user?.location || "Local City",
         postalCode: user?.addresses?.[0]?.postalCode || "400001",
         country: user?.addresses?.[0]?.country || "IN",
+        lat: user?.addresses?.[0]?.lat || user?.location?.coordinates?.[1] || 28.7041,
+        lng: user?.addresses?.[0]?.lng || user?.location?.coordinates?.[0] || 77.1025,
       };
 
       // 1. Create Order in Backend via API Gateway (Port 3000)
@@ -695,6 +706,29 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
                       }
                       sx={{ m: 0, width: "100%" }}
                     />
+                    
+                    {deliveryMethod === "delivery" && (
+                      <Box sx={{ mt: 2, ml: 4, mr: 2 }}>
+                        {user?.addresses?.[0]?.street || user?.address ? (
+                          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            📍 Delivering to: {user?.addresses?.[0]?.street || user?.address}
+                          </Typography>
+                        ) : (
+                          <Box>
+                            <Typography variant="body2" color="error" sx={{ mb: 1, fontWeight: 500 }}>
+                              Address required for delivery.
+                            </Typography>
+                            <Button 
+                              variant="outlined" 
+                              size="small" 
+                              onClick={() => navigate("/profile")}
+                            >
+                              Add Address
+                            </Button>
+                          </Box>
+                        )}
+                      </Box>
+                    )}
                   </Paper>
                   <Paper
                     variant="outlined"
@@ -720,7 +754,7 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
                             <StorefrontIcon fontSize="small" color="primary" /> Store Self-Pickup
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            🛍️ Ready for pickup immediately (FREE)
+                            🛍️ Ready for pickup immediately (FREE) • {cart[0]?.shop?.distance || "2.4"} km away
                           </Typography>
                         </Box>
                       }

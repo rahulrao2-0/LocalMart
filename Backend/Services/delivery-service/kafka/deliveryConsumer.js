@@ -7,7 +7,7 @@ export const startDeliveryConsumer = async () => {
     await consumer.connect();
     console.log("✅ Kafka Consumer connected for Delivery Service");
 
-    await consumer.subscribe({ topic: TOPICS.ORDER_EVENTS, fromBeginning: false });
+    await consumer.subscribe({ topics: [TOPICS.ORDER_EVENTS], fromBeginning: false });
     
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
@@ -18,12 +18,13 @@ export const startDeliveryConsumer = async () => {
           console.log(`\n======================================================`);
           console.log(`📥 [DELIVERY SERVICE] Received KAFKA EVENT: ${event.type}`);
           console.log(`======================================================`);
+          console.log("Event Data:", event.data);
           
           if (topic === TOPICS.ORDER_EVENTS) {
             const order = event.data;
             
             // 1. Create a delivery when order needs a partner
-            if (event.type === "ORDER_STATUS_UPDATED" && (order.orderStatus === "SEARCHING_FOR_PARTNER" || order.status === "SEARCHING_FOR_PARTNER")) {
+            if (["ORDER_STATUS_UPDATED", "ORDER_CREATED", "ORDER_CONFIRMED"].includes(event.type) && (order.orderStatus === "SEARCHING_FOR_PARTNER" || order.status === "SEARCHING_FOR_PARTNER")) {
               console.log(`📦 [DELIVERY SERVICE] Order ${order.orderNumber} is searching for partner. Creating delivery record.`);
               
               const existing = await Delivery.findOne({ orderId: order._id });
@@ -38,7 +39,11 @@ export const startDeliveryConsumer = async () => {
                     address: order.sellerAddress || "Seller Location",
                   },
                   dropLocation: {
-                    address: order.shippingAddress?.street || "Customer Location",
+                    address: order.shippingAddress 
+                      ? `${order.shippingAddress.street || ""}, ${order.shippingAddress.city || ""}, ${order.shippingAddress.postalCode || ""}`.replace(/(^[,\s]+)|([,\s]+$)/g, '')
+                      : "Customer Location",
+                    lat: order.shippingAddress?.lat || 28.7041,
+                    lng: order.shippingAddress?.lng || 77.1025,
                   },
                   timeline: [{ status: "SEARCHING_FOR_PARTNER", message: "Delivery request created" }]
                 });

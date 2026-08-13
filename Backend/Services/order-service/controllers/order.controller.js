@@ -33,9 +33,11 @@ export const createOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "No order items provided" });
     }
 
-    if (fulfillmentMode === "DELIVERY" && !shippingAddress) {
-      console.warn("⚠️ [ORDER SERVICE] Shipping address required for DELIVERY.");
-      return res.status(400).json({ success: false, message: "Shipping address is required for delivery" });
+    if (fulfillmentMode === "DELIVERY") {
+      if (!shippingAddress || !shippingAddress.street || shippingAddress.street.trim() === "") {
+        console.warn("⚠️ [ORDER SERVICE] Shipping address with street is required for DELIVERY.");
+        return res.status(400).json({ success: false, message: "Valid shipping address is required for delivery" });
+      }
     }
 
     const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -54,12 +56,18 @@ export const createOrder = async (req, res, next) => {
       tax: tax || 0,
       totalAmount,
       paymentMethod,
-      paymentStatus: "PENDING", // Wait for payment success event
-      orderStatus: "PENDING",
+      paymentStatus: (paymentMethod === "COD" || paymentMethod === "CASH_ON_DELIVERY") ? "PENDING" : "PENDING",
+      orderStatus: (paymentMethod === "COD" || paymentMethod === "CASH_ON_DELIVERY") 
+        ? (fulfillmentMode === "DELIVERY" ? "SEARCHING_FOR_PARTNER" : "CONFIRMED") 
+        : "PENDING",
       timeline: [
         { status: "PENDING", message: "Order placed successfully", createdAt: new Date() },
       ],
     });
+
+    if (order.orderStatus === "SEARCHING_FOR_PARTNER") {
+      order.timeline.push({ status: "SEARCHING_FOR_PARTNER", message: "Looking for delivery partner", createdAt: new Date() });
+    }
 
     const createdOrder = await order.save();
     console.log(`✅ [ORDER SERVICE] Order successfully saved in MongoDB with ID: ${createdOrder._id}`);
@@ -162,10 +170,12 @@ export const updateOrderStatus = async (req, res, next) => {
     
     const updatedOrder = await order.save();
 
+    console.log(`📡 [ORDER SERVICE] Publishing ORDER_STATUS_UPDATED event to Kafka topic ${TOPICS.ORDER_EVENTS}`);
     await publishEvent(TOPICS.ORDER_EVENTS, {
       type: "ORDER_STATUS_UPDATED",
       data: updatedOrder,
     });
+    console.log("✅ [ORDER SERVICE] ORDER_STATUS_UPDATED Kafka event published.");
 
     res.status(200).json({ success: true, data: updatedOrder });
   } catch (error) {
@@ -207,7 +217,7 @@ export const cancelOrder = async (req, res, next) => {
 export const getSellerOrders = async (req, res, next) => {
   console.log("📥 [ORDER SERVICE] getSellerOrders API Hit!");
   try {
-    const sellerId = req.user?.id || req.params.sellerId;
+    const sellerId =  req.params.sellerId;
     console.log("🔍 [ORDER SERVICE] Resolved Seller ID:", sellerId);
     
     if (!sellerId) {

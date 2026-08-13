@@ -4,9 +4,9 @@ export const authMiddleware = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     const token =
+      (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader) ||
       req.cookies?.accessToken ||
-      req.cookies?.token ||
-      (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader);
+      req.cookies?.token;
 
     if (token) {
       const secret = process.env.ACCESS_TOKEN_SECRET || "LOCALMART_ACCESS_SECRET_KEY";

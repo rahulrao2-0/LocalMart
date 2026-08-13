@@ -49,14 +49,16 @@ export const fetchDeliveries = createAsyncThunk(
         method: 'GET',
       });
       
+      console.log("🚚 [REDUX] Fetched Deliveries Data:", data.data);
+      
       return data.data.map(order => {
         let status = DELIVERY_STATUS.NEW;
-        if (order.orderStatus === 'SEARCHING_FOR_PARTNER') status = DELIVERY_STATUS.NEW;
-        if (order.orderStatus === 'PARTNER_ASSIGNED') status = DELIVERY_STATUS.ACCEPTED;
-        if (order.orderStatus === 'HEADING_TO_STORE' || order.orderStatus === 'REACHED_STORE' || order.orderStatus === 'PICKED_UP') status = DELIVERY_STATUS.PICKED_UP;
-        if (order.orderStatus === 'HEADING_TO_CUSTOMER' || order.orderStatus === 'REACHED_LOCATION') status = DELIVERY_STATUS.IN_TRANSIT;
-        if (order.orderStatus === 'DELIVERED') status = DELIVERY_STATUS.DELIVERED;
-        if (order.orderStatus === 'CANCELLED') status = DELIVERY_STATUS.CANCELLED;
+        if (order.status === 'SEARCHING_FOR_PARTNER') status = DELIVERY_STATUS.NEW;
+        if (order.status === 'PARTNER_ASSIGNED') status = DELIVERY_STATUS.ACCEPTED;
+        if (order.status === 'HEADING_TO_STORE' || order.status === 'REACHED_STORE' || order.status === 'PICKED_UP') status = DELIVERY_STATUS.PICKED_UP;
+        if (order.status === 'HEADING_TO_CUSTOMER' || order.status === 'REACHED_LOCATION') status = DELIVERY_STATUS.IN_TRANSIT;
+        if (order.status === 'DELIVERED') status = DELIVERY_STATUS.DELIVERED;
+        if (order.status === 'CANCELLED') status = DELIVERY_STATUS.CANCELLED;
 
         return {
           id: order.orderId || order._id,
@@ -80,11 +82,12 @@ export const fetchDeliveries = createAsyncThunk(
             position: { lat: 23.1852, lng: 77.0180 },
           },
           drop: {
-            address: order.shippingAddress ? `${order.shippingAddress.street}, ${order.shippingAddress.city}` : 'Customer Address',
-            landmark: order.shippingAddress?.state || 'City',
-            position: order.shippingAddress?.location?.coordinates?.length === 2 
-              ? { lat: order.shippingAddress.location.coordinates[1], lng: order.shippingAddress.location.coordinates[0] } 
-              : { lat: 23.2032, lng: 77.0844 },
+            address: order.dropLocation?.address || 'Customer Address',
+            landmark: 'City',
+            position: { 
+              lat: order.dropLocation?.lat || 28.7041, 
+              lng: order.dropLocation?.lng || 77.1025 
+            },
           },
           items: order.items || [],
           notes: 'Standard delivery',
@@ -98,9 +101,10 @@ export const fetchDeliveries = createAsyncThunk(
 
 export const acceptDeliveryThunk = createAsyncThunk(
   'deliveries/accept',
-  async (orderId, { rejectWithValue }) => {
+  async (orderId, { rejectWithValue, dispatch }) => {
     try {
-      await apiFetch(`/orders/${orderId}/accept-delivery`, { method: 'PUT' });
+      await apiFetch(`/delivery/${orderId}/accept`, { method: 'POST' });
+      dispatch(fetchDeliveries());
       return orderId;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -110,9 +114,13 @@ export const acceptDeliveryThunk = createAsyncThunk(
 
 export const rejectDeliveryThunk = createAsyncThunk(
   'deliveries/reject',
-  async (orderId, { rejectWithValue }) => {
+  async (orderId, { rejectWithValue, dispatch }) => {
     try {
-      await apiFetch(`/orders/${orderId}/reject-delivery`, { method: 'PUT' });
+      await apiFetch(`/delivery/${orderId}/cancel`, { 
+        method: 'PUT',
+        body: JSON.stringify({ reason: "Rejected by partner" })
+      });
+      dispatch(fetchDeliveries());
       return orderId;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -122,17 +130,18 @@ export const rejectDeliveryThunk = createAsyncThunk(
 
 export const updateDeliveryStatusThunk = createAsyncThunk(
   'deliveries/updateStatus',
-  async ({ orderId, status }, { rejectWithValue }) => {
+  async ({ orderId, status }, { rejectWithValue, dispatch }) => {
     try {
       let nextBackendStatus = 'PARTNER_ASSIGNED';
       if (status === DELIVERY_STATUS.PICKED_UP) nextBackendStatus = 'PICKED_UP';
       else if (status === DELIVERY_STATUS.IN_TRANSIT) nextBackendStatus = 'HEADING_TO_CUSTOMER';
       else if (status === DELIVERY_STATUS.DELIVERED) nextBackendStatus = 'DELIVERED';
       
-      await apiFetch(`/orders/${orderId}/status`, { 
+      await apiFetch(`/delivery/${orderId}/status`, { 
         method: 'PUT',
-        body: JSON.stringify({ orderStatus: nextBackendStatus })
+        body: JSON.stringify({ status: nextBackendStatus })
       });
+      dispatch(fetchDeliveries());
       return { orderId, status };
     } catch (error) {
       return rejectWithValue(error.message);

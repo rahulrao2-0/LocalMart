@@ -25,10 +25,19 @@ class TemplateService {
                         <h2 style="color: #4caf50;">✅ Order Confirmed!</h2>
                         <p>Hi,</p>
                         <p>Great news! Your payment was successful, and your order has been confirmed.</p>
-                        <blockquote style="background: #f4fbf4; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;">
-                            <strong>Message:</strong> ${data.message}
-                        </blockquote>
-                        <p>Your order is now being processed by the merchant. Track it inside your profile app.</p>
+                        
+                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin-top: 0; color: #333;">Order Details</h3>
+                            <p><strong>Order ID:</strong> ${data.metadata?.orderNumber || data.metadata?.orderId}</p>
+                            <p><strong>Amount Paid:</strong> ₹${data.metadata?.totalAmount || '0.00'}</p>
+                            <p><strong>Date & Time:</strong> ${data.metadata?.createdAt ? new Date(data.metadata.createdAt).toLocaleString() : new Date().toLocaleString()}</p>
+                            <p><strong>Fulfillment Method:</strong> ${data.metadata?.fulfillmentMode === 'PICKUP' ? '🛍️ Store Self-Pickup' : '🚚 Home Delivery'}</p>
+                        </div>
+
+                        ${data.metadata?.fulfillmentMode === 'PICKUP' 
+                            ? `<p><strong>Note for Pickup:</strong> Please head to the store to collect your order. You can show this email or your Order ID at the counter.</p>` 
+                            : `<p>Your order is now being processed by the merchant and a delivery partner will be assigned soon. Track it inside your profile app.</p>`}
+                        
                         <p>Thank you for shopping with LocalMart!</p>
                     </div>
                 `;

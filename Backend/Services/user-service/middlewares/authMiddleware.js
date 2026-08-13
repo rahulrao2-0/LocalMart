@@ -2,7 +2,8 @@ import jwt from "jsonwebtoken";
 
 export const authMiddleware = (req, res, next) => {
   try {
-    const token = req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    const token = (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader) || req.cookies?.accessToken;
 
     if (!token) {
       console.error("❌ [USER SERVICE AUTH] Token missing in request cookies or headers");

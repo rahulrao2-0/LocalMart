@@ -57,7 +57,7 @@ const Dashboard = () => {
   const { items: orders = [], loading: ordersLoading } = useSelector((state) => state.orders);
   const { items: products = [] } = useSelector((state) => state.products);
 
-  const sellerId = user?.id || user?._id || user?.sellerId || 'seller-001';
+  const sellerId = user?.id || user?._id || user?.userId || user?.sellerId || 'seller-001';
 
   useEffect(() => {
     if (!sellerId) return;

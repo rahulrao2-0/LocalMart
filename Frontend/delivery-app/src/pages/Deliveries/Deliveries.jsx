@@ -131,6 +131,7 @@ const MetaChip = ({ icon: Icon, label }) => (
 );
 
 const DeliveryCard = ({ delivery, driver, onAccept, onReject, onAdvance, onOpen }) => {
+  const dispatch = useDispatch();
   const [mapOpen, setMapOpen] = useState(false);
   const stop = nextStopOf(delivery);
   const isNew = delivery.status === DELIVERY_STATUS.NEW;

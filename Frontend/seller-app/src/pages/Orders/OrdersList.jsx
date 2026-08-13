@@ -216,7 +216,7 @@ const OrdersList = () => {
   const [cancelReason, setCancelReason] = useState('Item out of stock');
   const [submitting, setSubmitting] = useState(false);
 
-  const sellerId = user?.id || user?._id || user?.sellerId || "seller-001";
+  const sellerId = user?.id || user?._id || user?.userId || user?.sellerId || "seller-001";
 
   useEffect(() => {
     if (sellerId) {

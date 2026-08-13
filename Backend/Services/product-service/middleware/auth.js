@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 
 export const requireAuth = (req, res, next) => {
-  const token = req.cookies.accessToken;
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  const token = (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader) || req.cookies?.accessToken;
 
   if (!token) {
     return res.status(401).json({ success: false, message: "Not authenticated. No access token provided." });

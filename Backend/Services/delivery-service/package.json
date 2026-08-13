@@ -10,6 +10,7 @@
   "type": "module",
   "dependencies": {
     "@localmart/shared": "file:../../shared",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

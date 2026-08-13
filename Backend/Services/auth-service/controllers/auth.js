@@ -3,10 +3,8 @@ import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { pool } from "../config/db.js";
 import { generateOtp } from "../utils/generateOtp.js";
-import {storeOTP} from "../services/otp.service.js";
-import {getOTP} from "../services/otp.service.js";
-import {deleteOTP} from "../services/otp.service.js";
-import sendEmail from "../services/sendEmail.js";
+import otpService from "../services/otp.service.js";
+import emailService from "../services/sendEmail.js";
 import { setAuthCookies, clearAuthCookies } from "../utils/cookie.js";
 import { createAccessToken, createRefreshToken, verifyAccessToken, verifyRefreshToken } from "../utils/jwt.js";
 import { publishEvent, TOPICS } from "@localmart/shared";
@@ -137,9 +135,9 @@ export const signup = async (req, res) => {
     if (!isExisting || !isEmailVerified) {
       const otp = generateOtp();
       console.log(`Generated OTP for user ${userId}:`, otp);
-      await storeOTP(email, otp);
-       
-      await sendEmail({
+      await otpService.storeOTP(email, otp);
+
+      await emailService.sendEmail({
         to: email,
         subject: "Email Verification OTP",
         html: `
@@ -467,7 +465,7 @@ export const verifyEmail = async (req, res) => {
 
     
 
-    const otpFromredis = await getOTP(email);
+    const otpFromredis = await otpService.getOTP(email);
 
     if (!otpFromredis) {
         return res.status(400).json({
@@ -532,7 +530,7 @@ export const verifyEmail = async (req, res) => {
       setAuthCookies(res, accessToken, refreshToken);
 
       // 4. Clear the OTP from Redis so it cannot be reused
-      await deleteOTP(email);
+      await otpService.deleteOTP(email);
 
       // 5. Publish USER_CREATED Kafka Event for User Service
       try {
@@ -579,7 +577,8 @@ export const verifyEmail = async (req, res) => {
 
 export const me = async (req, res) => {
   try {
-    const token = req.cookies.accessToken || (req.headers.authorization && req.headers.authorization.split(" ")[1]);
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    const token = (authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader) || req.cookies.accessToken;
 
     if (!token) {
       return res.status(401).json({
@@ -653,10 +652,10 @@ export const resendOtp = async (req, res) => {
 
     // Generate new OTP & store in Redis
     const newOtp = generateOtp();
-    await storeOTP(email, newOtp);
+    await otpService.storeOTP(email, newOtp);
 
-    // Send Email via Brevo
-    await sendEmail({
+    // Send new OTP via email
+    await emailService.sendEmail({
       to: email,
       subject: "Your New Verification OTP - LocalMart",
       html: `
@@ -756,8 +755,8 @@ export const sellerSignup = async (req, res) => {
 
     if (!isExisting || !isEmailVerified) {
       const otp = generateOtp();
-      await storeOTP(email, otp);
-      await sendEmail({
+      await otpService.storeOTP(email, otp);
+      await emailService.sendEmail({
         to: email,
         subject: "Email Verification OTP",
         html: `<p>Your OTP is ${otp}</p>`
@@ -847,8 +846,8 @@ export const deliverySignup = async (req, res) => {
 
     if (!isExisting || !isEmailVerified) {
       const otp = generateOtp();
-      await storeOTP(email, otp);
-      await sendEmail({
+      await otpService.storeOTP(email, otp);
+      await emailService.sendEmail({
         to: email,
         subject: "Email Verification OTP",
         html: `<p>Your OTP is ${otp}</p>`

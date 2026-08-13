@@ -32,7 +32,7 @@ export const apiFetch = async (endpoint, options = {}) => {
       ...options.headers,
     },
     credentials: 'include', // THIS is what allows HttpOnly cookies (tokens) to be sent securely!
-    signal: options.signal || AbortSignal.timeout(3000),
+    ...(options.signal && { signal: options.signal }),
   };
 
   let response = await fetch(url, fetchOptions);

@@ -3,12 +3,17 @@ import {
   assignDeliveryPartner,
   getPartnerDeliveries,
   updateDeliveryStatus,
-  cancelDelivery
+  cancelDelivery,
+  getPartnerDashboard,
+  checkDeliveryAvailability
 } from "../controllers/delivery.controller.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+router.get("/availability", authMiddleware, checkDeliveryAvailability);
+
+router.get("/partner/:partnerId/dashboard", authMiddleware, getPartnerDashboard);
 router.get("/partner/:partnerId/orders", authMiddleware, getPartnerDeliveries);
 router.post("/:orderId/accept", authMiddleware, assignDeliveryPartner);
 router.put("/:orderId/status", authMiddleware, updateDeliveryStatus);

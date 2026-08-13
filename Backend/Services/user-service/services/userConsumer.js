@@ -12,7 +12,7 @@ export const startUserConsumer = async () => {
     await consumer.connect();
     console.log("✅ User Service Kafka Consumer Connected");
 
-    await consumer.subscribe({ topic: TOPICS.USER_EVENTS, fromBeginning: true });
+    await consumer.subscribe({ topics: [TOPICS.USER_EVENTS], fromBeginning: true });
 
 
     await consumer.run({

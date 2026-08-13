@@ -6,7 +6,7 @@ const consumer = createConsumer("order-service-group");
 export const connectPaymentConsumer = async () => {
   try {
     await consumer.connect();
-    await consumer.subscribe({ topic: TOPICS.PAYMENT_EVENTS, fromBeginning: true });
+    await consumer.subscribe({ topics: [TOPICS.PAYMENT_EVENTS, TOPICS.ORDER_EVENTS], fromBeginning: true });
 
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
@@ -21,8 +21,15 @@ export const connectPaymentConsumer = async () => {
             
             if (order) {
               order.paymentStatus = "COMPLETED";
-              order.orderStatus = "CONFIRMED";
-              order.timeline.push({ status: "CONFIRMED", message: "Payment successful, order confirmed", createdAt: new Date() });
+              
+              if (order.fulfillmentMode === "DELIVERY") {
+                order.orderStatus = "SEARCHING_FOR_PARTNER";
+                order.timeline.push({ status: "CONFIRMED", message: "Payment successful, order confirmed", createdAt: new Date() });
+                order.timeline.push({ status: "SEARCHING_FOR_PARTNER", message: "Looking for delivery partner", createdAt: new Date() });
+              } else {
+                order.orderStatus = "CONFIRMED";
+                order.timeline.push({ status: "CONFIRMED", message: "Payment successful, order confirmed", createdAt: new Date() });
+              }
               
               const updatedOrder = await order.save();
               console.log(`✅ [ORDER SERVICE] Order ${orderId} updated to CONFIRMED after successful payment.`);
@@ -55,6 +62,28 @@ export const connectPaymentConsumer = async () => {
                 data: updatedOrder,
               });
               console.log(`✅ [ORDER SERVICE] ORDER_CANCELLED published successfully.`);
+            }
+          if (event.type === "DELIVERY_ASSIGNED") {
+            const { _id, deliveryPartnerId } = event.data;
+            const order = await Order.findById(_id);
+            if (order) {
+              order.deliveryPartnerId = deliveryPartnerId;
+              order.orderStatus = "PARTNER_ASSIGNED";
+              order.timeline.push({ status: "PARTNER_ASSIGNED", message: "Delivery partner assigned", createdAt: new Date() });
+              await order.save();
+              console.log(`✅ [ORDER SERVICE] Order ${_id} updated to PARTNER_ASSIGNED`);
+            }
+          }
+
+          if (event.type === "ORDER_STATUS_UPDATED") {
+            const { _id, orderStatus, deliveryPartnerId } = event.data;
+            const order = await Order.findById(_id);
+            if (order && orderStatus) {
+              order.orderStatus = orderStatus;
+              if (deliveryPartnerId) order.deliveryPartnerId = deliveryPartnerId;
+              order.timeline.push({ status: orderStatus, message: `Status updated to ${orderStatus}`, createdAt: new Date() });
+              await order.save();
+              console.log(`✅ [ORDER SERVICE] Order ${_id} updated to ${orderStatus}`);
             }
           }
 

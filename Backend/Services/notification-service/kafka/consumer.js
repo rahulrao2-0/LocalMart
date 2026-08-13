@@ -8,8 +8,7 @@ export const startConsumer = async () => {
     console.log('✅ Kafka Consumer connected for notification-service');
 
     // Subscribe to the main transactional event topics
-    await consumer.subscribe({ topic: TOPICS.ORDER_EVENTS, fromBeginning: false });
-    await consumer.subscribe({ topic: TOPICS.PAYMENT_EVENTS, fromBeginning: false });
+    await consumer.subscribe({ topics: [TOPICS.ORDER_EVENTS, TOPICS.PAYMENT_EVENTS], fromBeginning: false });
     console.log(`📡 Subscribed to topics: ${TOPICS.ORDER_EVENTS}, ${TOPICS.PAYMENT_EVENTS}`);
 
     await consumer.run({
@@ -67,7 +66,14 @@ export const startConsumer = async () => {
                 title: "Order Confirmed!",
                 message: `Great news! Your order #${orderNumber} of ₹${totalAmount} has been confirmed.`,
                 type: "ORDER_CONFIRMED",
-                metadata: { orderId, orderNumber },
+                metadata: { 
+                    orderId, 
+                    orderNumber, 
+                    totalAmount, 
+                    fulfillmentMode: order.fulfillmentMode || "DELIVERY",
+                    items: order.items,
+                    createdAt: order.createdAt || new Date().toISOString()
+                },
                 userEmail: customerEmail
               });
 
