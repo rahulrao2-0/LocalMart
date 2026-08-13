@@ -92,6 +92,7 @@ const readOrder = (order) => {
     customerEmail: order.customer?.email || order.shippingAddress?.email || 'N/A',
     date: formatDate(order.createdAt),
     total: order.totalAmount,
+    items: order.items || [],
   };
 };
 
@@ -194,6 +195,21 @@ const OrderCard = ({ order, onStatusChange }) => {
           {inr(o.total)}
         </Typography>
       </Box>
+
+      {o.items?.length > 0 && (
+        <Box sx={{ mb: 2, bgcolor: 'background.default', p: 1.5, borderRadius: 2 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, mb: 1, display: 'block' }}>
+            Items ({o.items.length})
+          </Typography>
+          <Stack spacing={0.5}>
+            {o.items.map((item, idx) => (
+              <Typography key={idx} variant="caption" sx={{ color: 'text.primary' }}>
+                {item.quantity} x {item.productName || item.name || "Item"} <Typography component="span" variant="caption" color="text.secondary">({item.productId?.substring(0, 8) || item.id?.substring(0, 8) || "N/A"})</Typography>
+              </Typography>
+            ))}
+          </Stack>
+        </Box>
+      )}
 
       <StatusSelect fullWidth status={o.status} orderId={o.id} onChange={onStatusChange} />
     </Paper>
@@ -409,6 +425,7 @@ const OrdersList = () => {
                   <TableCell>Order Details</TableCell>
                   <TableCell>Customer</TableCell>
                   <TableCell>Date</TableCell>
+                  <TableCell>Items</TableCell>
                   <TableCell align="right">Total</TableCell>
                   <TableCell align="center">Status</TableCell>
                   <TableCell align="center">Actions</TableCell>
@@ -460,6 +477,15 @@ const OrdersList = () => {
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {o.date}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Stack spacing={0.5}>
+                          {o.items?.map((item, idx) => (
+                            <Typography key={idx} variant="caption" sx={{ color: 'text.primary', whiteSpace: 'nowrap' }}>
+                              {item.quantity} x {item.productName || item.name || "Item"} <Typography component="span" variant="caption" color="text.secondary">({item.productId?.substring(0, 8) || item.id?.substring(0, 8) || "N/A"})</Typography>
+                            </Typography>
+                          ))}
+                        </Stack>
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="subtitle2" color="primary.main" sx={{ fontWeight: 800 }}>

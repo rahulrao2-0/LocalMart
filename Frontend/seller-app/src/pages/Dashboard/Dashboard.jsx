@@ -402,6 +402,15 @@ const Dashboard = () => {
                         <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
                           {orderNum} · {dateStr}
                         </Typography>
+                        {order.items?.length > 0 && (
+                          <Stack spacing={0.2} sx={{ mt: 0.5 }}>
+                            {order.items.map((item, idx) => (
+                              <Typography key={idx} variant="caption" sx={{ color: 'text.primary', fontSize: '0.65rem' }}>
+                                {item.quantity}x {item.productName || item.name || "Item"} <span style={{ color: 'gray' }}>({item.productId?.substring(0, 8) || item.id?.substring(0, 8) || "N/A"})</span>
+                              </Typography>
+                            ))}
+                          </Stack>
+                        )}
                       </Box>
                       <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>

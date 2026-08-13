@@ -8,12 +8,14 @@ import {
   updateAddress,
   deleteAddress,
   getProfileInternal,
+  getOnlineDeliveryPartnersCount,
 } from "../controllers/userController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { upload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
+router.get("/delivery-partners/online-count", getOnlineDeliveryPartnersCount);
 router.get("/internal/:userId", getProfileInternal);
 
 // Profile Routes

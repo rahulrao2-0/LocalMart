@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -28,6 +28,7 @@ import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { setUnreadCount, showToast } from '../../redux/features/uiSlice';
 import { formatRelative } from '../../utils/format';
+import { apiFetch } from '../../utils/api';
 
 const TYPE_META = {
   job: { icon: TwoWheelerRoundedIcon, tone: 'primary', label: 'Job' },
@@ -35,55 +36,9 @@ const TYPE_META = {
   completed: { icon: CheckCircleRoundedIcon, tone: 'secondary', label: 'Completed' },
   alert: { icon: WarningAmberRoundedIcon, tone: 'warning', label: 'Alert' },
   news: { icon: CampaignRoundedIcon, tone: 'info', label: 'Update' },
+  ORDER_STATUS_UPDATED: { icon: CampaignRoundedIcon, tone: 'info', label: 'Order Update' },
+  DELIVERY_ASSIGNED: { icon: TwoWheelerRoundedIcon, tone: 'primary', label: 'New Job' }
 };
-
-const SEED = [
-  {
-    id: 1,
-    type: 'job',
-    title: 'New job near Indiranagar',
-    message: 'DEL-2041 · Shree Grocery Mart → Koramangala · ₹68 payout, 3.4 km.',
-    date: '2026-08-11T14:22:00',
-    read: false,
-    link: '/deliveries/DEL-2041',
-  },
-  {
-    id: 2,
-    type: 'alert',
-    title: 'Insurance expires soon',
-    message: 'Upload your renewed two-wheeler insurance before 30 Sep 2026 to stay eligible.',
-    date: '2026-08-11T12:05:00',
-    read: false,
-    link: '/profile',
-  },
-  {
-    id: 3,
-    type: 'payout',
-    title: 'Weekly settlement credited',
-    message: '₹7,420 was transferred to HDFC ••4412 for the week ending 9 Aug.',
-    date: '2026-08-10T09:12:00',
-    read: false,
-    link: '/earnings',
-  },
-  {
-    id: 4,
-    type: 'completed',
-    title: 'DEL-2030 delivered',
-    message: 'Kavya Suresh rated you 5 stars. ₹66 added to today’s earnings.',
-    date: '2026-08-11T13:35:00',
-    read: true,
-    link: '/history',
-  },
-  {
-    id: 5,
-    type: 'news',
-    title: 'Surge active in HSR Layout',
-    message: 'Evening peak bonus of ₹15 per trip is live until 9 pm.',
-    date: '2026-08-11T11:00:00',
-    read: true,
-    link: '/map',
-  },
-];
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -93,34 +48,71 @@ const TABS = [
 export default function Notifications() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [items, setItems] = useState(SEED);
+  const { user } = useSelector((state) => state.auth);
+  const userId = user?.id || user?._id || user?.userId || user?.deliveryPartnerId;
+
+  const [items, setItems] = useState([]);
   const [tab, setTab] = useState(0);
 
-  const unread = items.filter((item) => !item.read).length;
+  const fetchNotifications = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/notifications?userId=${userId}`, { credentials: "include" });
+      const data = await res.json();
+      if (data && data.success) {
+        setItems(data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+    }
+  };
 
-  // Publish the count so the topbar, sidebar and bottom nav badges agree.
+  useEffect(() => {
+    fetchNotifications();
+  }, [userId]);
+
+  const unread = items.filter((item) => !item.isRead).length;
+
   useEffect(() => {
     dispatch(setUnreadCount(unread));
   }, [dispatch, unread]);
 
   const visible = useMemo(
-    () => (TABS[tab].key === 'unread' ? items.filter((item) => !item.read) : items),
+    () => (TABS[tab].key === 'unread' ? items.filter((item) => !item.isRead) : items),
     [items, tab],
   );
 
-  const markAllRead = () => {
-    setItems((list) => list.map((item) => ({ ...item, read: true })));
-    dispatch(showToast({ message: 'All notifications marked as read', severity: 'success' }));
+  const markAllRead = async () => {
+    try {
+      await fetch(`http://localhost:3000/api/v1/notifications/read-all?userId=${userId}`, { method: 'PUT', credentials: 'include' });
+      setItems((list) => list.map((item) => ({ ...item, isRead: true })));
+      dispatch(showToast({ message: 'All notifications marked as read', severity: 'success' }));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const openItem = (item) => {
-    setItems((list) => list.map((entry) => (entry.id === item.id ? { ...entry, read: true } : entry)));
-    if (item.link) navigate(item.link);
+  const openItem = async (item) => {
+    try {
+      await fetch(`http://localhost:3000/api/v1/notifications/${item._id}/read?userId=${userId}`, { method: 'PUT', credentials: 'include' });
+      setItems((list) => list.map((entry) => (entry._id === item._id ? { ...entry, isRead: true } : entry)));
+    } catch (err) {}
+    
+    if (item.metadata?.orderId) {
+      navigate(`/deliveries/${item.metadata.orderId}`);
+    } else if (item.link) {
+      navigate(item.link);
+    }
   };
 
-  const remove = (event, id) => {
+  const remove = async (event, id) => {
     event.stopPropagation();
-    setItems((list) => list.filter((item) => item.id !== id));
+    try {
+      await fetch(`http://localhost:3000/api/v1/notifications/${id}?userId=${userId}`, { method: 'DELETE', credentials: 'include' });
+      setItems((list) => list.filter((item) => item._id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -166,8 +158,8 @@ export default function Notifications() {
               const meta = TYPE_META[item.type] || TYPE_META.news;
               const Icon = meta.icon;
               return (
-                <Stack
-                  key={item.id}
+                  <Stack
+                  key={item._id}
                   direction="row"
                   spacing={1.75}
                   alignItems="flex-start"
@@ -175,7 +167,7 @@ export default function Notifications() {
                   sx={{
                     p: { xs: 2, sm: 2.5 },
                     cursor: 'pointer',
-                    bgcolor: item.read ? 'transparent' : 'background.subtle',
+                    bgcolor: item.isRead ? 'transparent' : 'background.subtle',
                     transition: 'background-color 160ms ease',
                     '&:hover': { bgcolor: 'action.hover' },
                   }}
@@ -194,10 +186,10 @@ export default function Notifications() {
 
                   <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', gap: 0.75 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: item.read ? 700 : 800 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: item.isRead ? 700 : 800 }}>
                         {item.title}
                       </Typography>
-                      {!item.read && (
+                      {!item.isRead && (
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }} />
                       )}
                       <Chip
@@ -216,7 +208,7 @@ export default function Notifications() {
                       {item.message}
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 0.5 }}>
-                      {formatRelative(item.date)}
+                      {formatRelative(item.createdAt)}
                     </Typography>
                   </Box>
 
@@ -224,7 +216,7 @@ export default function Notifications() {
                     <IconButton
                       size="small"
                       aria-label="Dismiss notification"
-                      onClick={(event) => remove(event, item.id)}
+                      onClick={(event) => remove(event, item._id)}
                       sx={{ flexShrink: 0, color: 'text.secondary' }}
                     >
                       <DeleteOutlineRoundedIcon fontSize="small" />

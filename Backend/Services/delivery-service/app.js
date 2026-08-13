@@ -29,10 +29,18 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3008;
 
+import { connectProducer } from "@localmart/shared";
+
 mongoose
   .connect(process.env.MONGO_URI || "mongodb+srv://yadavrahul81135_db_user:GLAv42eWHk960j3P@cluster0.achmfoa.mongodb.net/localmart_delivery?appName=Cluster0")
-  .then(() => {
+  .then(async () => {
     console.log("✅ MongoDB connected for Delivery Service");
+    try {
+      await connectProducer();
+      console.log("🚀 Kafka Producer Connected");
+    } catch (err) {
+      console.error("❌ Kafka Producer Failed:", err.message);
+    }
     app.listen(PORT, () => {
       console.log(`🚀 Delivery Service running on port ${PORT}`);
       startDeliveryConsumer();

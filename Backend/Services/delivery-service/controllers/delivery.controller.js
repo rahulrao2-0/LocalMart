@@ -25,13 +25,15 @@ export const assignDeliveryPartner = async (req, res, next) => {
 
     const updatedDelivery = await delivery.save();
 
-    // Publish event back to kafka so order-service and notification-service can react
+    // Publish Delivery Assigned Event to Order Service
     await publishEvent(TOPICS.ORDER_EVENTS, {
       type: "DELIVERY_ASSIGNED",
       data: {
         _id: orderId,
         orderNumber: delivery.orderNumber,
-        deliveryPartnerId,
+        customerId: delivery.customerId,
+        sellerId: delivery.sellerId,
+        deliveryPartnerId: deliveryPartnerId,
         status: "PARTNER_ASSIGNED"
       }
     });
@@ -79,6 +81,8 @@ export const updateDeliveryStatus = async (req, res, next) => {
       data: {
         _id: orderId,
         orderNumber: delivery.orderNumber,
+        customerId: delivery.customerId,
+        sellerId: delivery.sellerId,
         orderStatus: status,
         deliveryPartnerId: delivery.deliveryPartnerId
       }
@@ -158,7 +162,12 @@ export const getPartnerDashboard = async (req, res, next) => {
 
 export const checkDeliveryAvailability = async (req, res, next) => {
   try {
-    const isAvailable = true; 
+    const userRes = await fetch('http://localhost:3002/api/v1/users/delivery-partners/online-count');
+    const userData = await userRes.json();
+    const count = userData?.count || 0;
+    
+    const isAvailable = count > 0;
+    
     if (isAvailable) {
         return res.status(200).json({ success: true, available: true, message: 'Delivery partners are available' });
     } else {

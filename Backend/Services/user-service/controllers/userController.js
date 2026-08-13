@@ -79,6 +79,23 @@ export const getProfileInternal = async (req, res) => {
   }
 };
 
+export const getOnlineDeliveryPartnersCount = async (req, res) => {
+  try {
+    const { default: DeliveryPartner } = await import('../models/DeliveryPartner.js');
+    const count = await DeliveryPartner.countDocuments({ isOnline: true });
+    return res.status(200).json({
+      success: true,
+      count,
+    });
+  } catch (error) {
+    console.error("Get Online Count Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 // 2. Update Profile
 export const updateProfile = async (req, res) => {
   try {

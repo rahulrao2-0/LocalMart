@@ -378,7 +378,7 @@ export default function MyOrdersPage({ themeMode }) {
                     {order.items && order.items.map((item, idx) => (
                       <Stack key={idx} direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="body2" color="text.primary">
-                          {item.quantity} x {item.productName || item.name || "Item"} {item.weight ? `(${item.weight})` : ""}
+                          {item.quantity} x {item.productName || item.name || "Item"} {item.weight ? `(${item.weight})` : ""} <Typography component="span" variant="caption" color="text.secondary">({item.productId?.substring(0, 8) || item.id?.substring(0, 8) || "N/A"})</Typography>
                         </Typography>
                         <Typography variant="body2" fontWeight={700}>
                           ₹{(item.subtotal || item.price * item.quantity).toFixed(2)}

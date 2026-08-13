@@ -63,6 +63,8 @@ export const connectPaymentConsumer = async () => {
               });
               console.log(`✅ [ORDER SERVICE] ORDER_CANCELLED published successfully.`);
             }
+          }
+
           if (event.type === "DELIVERY_ASSIGNED") {
             const { _id, deliveryPartnerId } = event.data;
             const order = await Order.findById(_id);
