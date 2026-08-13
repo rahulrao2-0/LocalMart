@@ -224,6 +224,10 @@ const OrdersList = () => {
     }
   }, [dispatch, sellerId]);
 
+  useEffect(() => {
+    console.log("[Order Flow Debug] Seller Orders List Updated:", items);
+  }, [items]);
+
   const handleStatusChange = (orderId, newStatus) => {
     if (newStatus === 'CANCELLED') {
       setSelectedOrderId(orderId);

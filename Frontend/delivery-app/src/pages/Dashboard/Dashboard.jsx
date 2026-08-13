@@ -105,6 +105,10 @@ const Dashboard = () => {
     dispatch(fetchDeliveries());
   }, [dispatch]);
 
+  useEffect(() => {
+    console.log("[Order Flow Debug] Delivery Dashboard Data Updated:", { stats, deliveries, active, requests });
+  }, [stats, deliveries, active, requests]);
+
   const widgetMarkers = useMemo(() => {
     const stops = orderByProximity(coords, active.map((delivery) => ({ ...nextStopOf(delivery), delivery })));
     return stops.slice(0, 5).map((stop, index) => ({

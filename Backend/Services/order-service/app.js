@@ -12,6 +12,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Order flow debugging middleware
+app.use((req, res, next) => {
+  console.log(`[Order Flow Debug] Request Method: ${req.method}, URL: ${req.originalUrl}`);
+  console.log(`[Order Flow Debug] Request Body:`, req.body);
+  next();
+});
+
 app.use("/api/v1/orders", orderRoutes);
 
 // Global Error Handler

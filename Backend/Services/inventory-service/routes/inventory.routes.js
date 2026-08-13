@@ -1,11 +1,17 @@
 import express from 'express';
-import inventoryController from '../controllers/inventory.controller.js';
+import {
+    getInventory,
+    increaseStock,
+    decreaseStock,
+    reserveStock,
+    releaseStock
+} from '../controllers/inventory.controller.js';
 const router = express.Router();
 
-router.get('/:productId', inventoryController.getInventory.bind(inventoryController));
-router.put('/increase', inventoryController.increaseStock.bind(inventoryController));
-router.put('/decrease', inventoryController.decreaseStock.bind(inventoryController));
-router.put('/reserve', inventoryController.reserveStock.bind(inventoryController));
-router.put('/release', inventoryController.releaseStock.bind(inventoryController));
+router.get('/:productId', getInventory);
+router.put('/increase', increaseStock);
+router.put('/decrease', decreaseStock);
+router.put('/reserve', reserveStock);
+router.put('/release', releaseStock);
 
 export default router;

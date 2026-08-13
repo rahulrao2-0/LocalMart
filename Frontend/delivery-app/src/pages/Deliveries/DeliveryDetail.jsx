@@ -42,11 +42,11 @@ import useGeolocation from '../../hooks/useGeolocation';
 import { PIN_COLORS } from '../../components/Map/mapIcons';
 import {
   selectDeliveries,
-  acceptDelivery,
-  rejectDelivery,
-  advanceDelivery,
   nextStatusOf,
   ACTION_LABELS,
+  acceptDeliveryThunk,
+  rejectDeliveryThunk,
+  updateDeliveryStatusThunk,
 } from '../../redux/features/deliveriesSlice';
 import { showToast } from '../../redux/features/uiSlice';
 import { DELIVERY_STATUS, DELIVERY_STAGES, STATUS_META, nextStopOf } from '../../data/mockDeliveries';
@@ -242,13 +242,18 @@ export default function DeliveryDetail() {
           nextStatus === DELIVERY_STATUS.DELIVERED
             ? `Delivered · ${formatCurrency(delivery.payout)} earned`
             : `Status updated to ${STATUS_META[nextStatus]?.label || nextStatus}`,
-        severity: 'success',
-      }),
-    );
+
+  const handleAccept = () => {
+    dispatch(acceptDeliveryThunk(delivery.id));
+    dispatch(showToast({ message: 'Delivery accepted. Drive safe!' }));
+  };
+  const handleAdvance = () => {
+    const next = nextStatusOf(delivery.status);
+    if (next) dispatch(updateDeliveryStatusThunk({ orderId: delivery.id, status: next }));
   };
 
   const handleDecline = () => {
-    dispatch(rejectDelivery(delivery.id));
+    dispatch(rejectDeliveryThunk(delivery.id));
     dispatch(showToast({ message: `${delivery.id} declined`, severity: 'info' }));
     navigate('/deliveries');
   };

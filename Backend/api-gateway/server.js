@@ -32,7 +32,7 @@ app.use(
     pathFilter: "/api/v1/auth",
     target: "http://127.0.0.1:3001",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -42,7 +42,7 @@ app.use(
     pathFilter: "/api/v1/users",
     target: "http://127.0.0.1:3002",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -52,7 +52,7 @@ app.use(
     pathFilter: "/api/v1/products",
     target: "http://127.0.0.1:3003",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -62,7 +62,7 @@ app.use(
     pathFilter: "/api/v1/sellers",
     target: "http://127.0.0.1:3002",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -72,7 +72,7 @@ app.use(
     pathFilter: "/api/v1/orders",
     target: "http://127.0.0.1:3004",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -82,7 +82,7 @@ app.use(
     pathFilter: "/api/v1/payments",
     target: "http://127.0.0.1:3005",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -92,7 +92,7 @@ app.use(
     pathFilter: "/api/v1/inventory",
     target: "http://127.0.0.1:3007",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -103,7 +103,7 @@ app.use(
     target: "http://127.0.0.1:5003",
     changeOrigin: true,
     pathRewrite: { "^/api/v1": "/api" },
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -114,7 +114,7 @@ app.use(
     target: "http://127.0.0.1:3006",
     changeOrigin: true,
     pathRewrite: { "^/api/v1/cart": "/cart" },
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 
@@ -124,7 +124,7 @@ app.use(
     pathFilter: "/api/v1/delivery",
     target: "http://127.0.0.1:3008",
     changeOrigin: true,
-    on: { error: handleProxyError }
+    /* on: { error: handleProxyError } */
   })
 );
 

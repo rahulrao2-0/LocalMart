@@ -65,6 +65,10 @@ const Dashboard = () => {
     dispatch(fetchProducts(sellerId));
   }, [dispatch, sellerId]);
 
+  useEffect(() => {
+    console.log("[Order Flow Debug] Seller Dashboard Data Updated:", { orders, products });
+  }, [orders, products]);
+
   // Every figure below is derived from data already in the store — the previous
   // version showed a hardcoded low-stock count and invented trend percentages.
   const stats = useMemo(() => {

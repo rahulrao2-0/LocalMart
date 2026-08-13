@@ -368,6 +368,10 @@ export default function Deliveries() {
     dispatch(fetchDeliveries());
   }, [dispatch]);
 
+  useEffect(() => {
+    console.log("[Order Flow Debug] Delivery Orders Data Updated:", deliveries);
+  }, [deliveries]);
+
   const { coords, position } = useGeolocation({ watch: false });
   const driver = position || coords;
 
