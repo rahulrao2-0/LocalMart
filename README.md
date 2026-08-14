@@ -24,17 +24,17 @@ Unlike a single-warehouse marketplace, LocalMart routes every order through **re
 ### Customer App — Home
 Browse by category, see live nearby shops on the map, and pick delivery or pickup per product.
 
-![Customer app home](./customer-app-home.png)
+![Customer app home](./customer-app-home.png.png)
 
 ### Seller Hub — Dashboard
 Shop owners track revenue, pending orders, low stock, and recent orders in real time.
 
-![Seller hub dashboard](./seller-hub-dashboard.png)
+![Seller hub dashboard](./seller-hub-dashboard.png.png)
 
 ### Delivery App — Live Map
 Delivery partners go online, accept jobs, and follow a live route to each stop.
 
-![Delivery live map](./delivery-live-map.png)
+![Delivery live map](./delivery-live-map.png.png)
 
 ---
 
