@@ -11,7 +11,12 @@ export const loginUser = async (credentials) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || "Login failed.");
+    let errorMessage = data.message || data.error || "Login failed.";
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After");
+      if (retryAfter) errorMessage += ` (Try again in ${Math.ceil(retryAfter)}s)`;
+    }
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -29,7 +34,12 @@ export const refreshTokenApi = async () => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to refresh token.");
+    let errorMessage = data.message || "Failed to refresh token.";
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After");
+      if (retryAfter) errorMessage += ` (Try again in ${Math.ceil(retryAfter)}s)`;
+    }
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -47,7 +57,12 @@ export const resendOtpApi = async (email) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || data.error || "Failed to resend OTP.");
+    let errorMessage = data.message || data.error || "Failed to resend OTP.";
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After");
+      if (retryAfter) errorMessage += ` (Try again in ${Math.ceil(retryAfter)}s)`;
+    }
+    throw new Error(errorMessage);
   }
 
   return data;
@@ -124,7 +139,12 @@ export const fetchWithAuth = async (url, options = {}) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Request failed.");
+    let errorMessage = data.message || "Request failed.";
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After");
+      if (retryAfter) errorMessage += ` (Try again in ${Math.ceil(retryAfter)}s)`;
+    }
+    throw new Error(errorMessage);
   }
 
   return data;

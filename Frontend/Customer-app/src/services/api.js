@@ -67,6 +67,15 @@ export const apiRequest = async (
         // Fallback to HTTP status text
       }
     }
+    
+    // Check for Rate Limit (429 Too Many Requests)
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After");
+      if (retryAfter) {
+        errorMessage = `${errorMessage} (Try again in ${Math.ceil(retryAfter)}s)`;
+      }
+    }
+    
     throw new Error(errorMessage);
   }
 

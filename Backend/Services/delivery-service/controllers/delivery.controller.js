@@ -115,6 +115,8 @@ export const cancelDelivery = async (req, res, next) => {
       data: {
         _id: orderId,
         orderNumber: delivery.orderNumber,
+        customerId: delivery.customerId,
+        sellerId: delivery.sellerId,
         orderStatus: "SEARCHING_FOR_PARTNER" // Reset order status so another partner can pick it up
       }
     });

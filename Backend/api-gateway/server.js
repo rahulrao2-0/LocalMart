@@ -1,12 +1,14 @@
 import express from "express";
 import cors from "cors";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
 const app = express();
 
 app.use(cors({
     origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
-    credentials: true
+    credentials: true,
+    exposedHeaders: ["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"]
 }));
 
 app.use((req, res, next) => {
@@ -25,6 +27,61 @@ const handleProxyError = (err, req, res) => {
     });
   }
 };
+
+// --- Rate Limiting Setup (Token Bucket) ---
+
+const authRateLimiter = new RateLimiterMemory({
+  points: 5,        // Capacity (burst)
+  duration: 60,     // Refill window in seconds
+});
+
+const orderRateLimiter = new RateLimiterMemory({
+  points: 20,       
+  duration: 60,     
+});
+
+const generalRateLimiter = new RateLimiterMemory({
+  points: 100,      
+  duration: 10,     
+});
+
+const rateLimitMiddleware = (limiter, errorMessage) => {
+  return (req, res, next) => {
+    limiter.consume(req.ip, 1)
+      .then((rateLimiterRes) => {
+        res.set({
+          "X-RateLimit-Limit": limiter.points,
+          "X-RateLimit-Remaining": rateLimiterRes.remainingPoints,
+        });
+        next();
+      })
+      .catch((rateLimiterRes) => {
+        const retrySecs = Math.ceil(rateLimiterRes.msBeforeNext / 1000);
+        console.warn(`🛑 [RATE LIMIT EXCEEDED] IP: ${req.ip} | Route: ${req.originalUrl} | Wait: ${retrySecs}s`);
+        
+        res.set({
+          "Retry-After": rateLimiterRes.msBeforeNext / 1000,
+          "X-RateLimit-Limit": limiter.points,
+          "X-RateLimit-Remaining": rateLimiterRes.remainingPoints,
+        });
+        res.status(429).json({
+          success: false,
+          error: "Too Many Requests",
+          message: errorMessage,
+          errorCode: "RATE_LIMIT_EXCEEDED"
+        });
+      });
+  };
+};
+
+const authLimit = rateLimitMiddleware(authRateLimiter, "Too many login attempts. Please wait a minute.");
+const orderLimit = rateLimitMiddleware(orderRateLimiter, "Too many order requests. Please slow down.");
+const generalLimit = rateLimitMiddleware(generalRateLimiter, "Too many requests. Please try again later.");
+
+// Apply limiters to specific paths
+app.use("/api/v1/auth", authLimit);
+app.use("/api/v1/orders", orderLimit);
+app.use(generalLimit); // General limiter for all other routes
 
 // Proxy for auth API endpoints (/api/v1/auth)
 app.use(
