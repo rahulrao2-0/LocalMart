@@ -55,32 +55,30 @@ export default function ProductDetailPage({ onAddToCart, themeMode }) {
         if (response && response.success && response.data) {
           const data = response.data;
           // Map backend product to frontend structure
-          const shopName = data.brand || "Local Premium Seller";
+          const shopName = data.brand;
           const price = data.price;
           const isOpen = data.status !== "INACTIVE";
-          const distanceKm = Math.floor(Math.random() * 4) + 1;
-
-          const sellerId = data.sellerId || data.seller_id || "seller-001";
+          
+          const sellerId = data.sellerId || data.seller_id;
 
           const mappedProduct = {
             id: data._id,
             sellerId: sellerId,
             name: data.name,
-            category: data.category || "General",
-            rating: data.rating || 4.7,
+            category: data.category,
+            rating: data.rating,
             supportsDelivery: true,
             supportsPickup: true,
             price: price,
             nearestShop: shopName,
-            distanceKm: distanceKm,
             isOpen: isOpen,
             shopCount: 1,
-            shops: [{ shopName, price, distanceKm, isOpen, rating: 4.8, address: "City Center Hub", sellerId: sellerId }],
+            shops: [{ shopName, price, isOpen, rating: data.rating, address: data.address, sellerId: sellerId }],
             images: data.images && data.images.length > 0 ? data.images : [],
-            about: data.description || "Discover premium quality with this locally sourced item. Built to last and sourced directly from nearby vendors to ensure you get the best value and authenticity.",
-            stockAvailable: data.stockAvailable || 10,
-            brand: data.brand || "LocalMart Signature",
-            weight: data.weight || "",
+            about: data.description,
+            stockAvailable: data.stockAvailable,
+            brand: data.brand,
+            weight: data.weight,
           };
 
           setProduct(mappedProduct);

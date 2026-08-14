@@ -38,74 +38,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 // Initial nearby shops with real MP coordinates (Kothri Kalan, Sehore, Bhopal, Ashta)
-export const initialShops = [
-  {
-    id: "shop-1",
-    name: "Kothri Kalan Kisan Supermart",
-    category: "Groceries",
-    rating: 4.8,
-    isOpen: true,
-    address: "Bhopal-Indore Highway, Kothri Kalan, Sehore 466116",
-    phone: "+91 7562 241001",
-    lat: 23.1852,
-    lng: 77.0180
-  },
-  {
-    id: "shop-2",
-    name: "Sehore Central Provisions",
-    category: "Groceries",
-    rating: 4.6,
-    isOpen: true,
-    address: "Station Road, Sehore 466001",
-    phone: "+91 7562 223344",
-    lat: 23.2032,
-    lng: 77.0844
-  },
-  {
-    id: "shop-3",
-    name: "Bhopal Tech & Electronics",
-    category: "Electronics",
-    rating: 4.7,
-    isOpen: true,
-    address: "Bairagarh Main Road, Bhopal 462030",
-    phone: "+91 755 2731010",
-    lat: 23.2650,
-    lng: 77.3400
-  },
-  {
-    id: "shop-4",
-    name: "Ashta Furniture & Home Hub",
-    category: "Furniture",
-    rating: 4.5,
-    isOpen: true,
-    address: "Kannod Road, Ashta, Sehore 466116",
-    phone: "+91 7560 284199",
-    lat: 23.0163,
-    lng: 76.7196
-  },
-  {
-    id: "shop-5",
-    name: "Ichhawar Organic Farm Fresh",
-    category: "Vegetables",
-    rating: 4.4,
-    isOpen: true,
-    address: "Ichhawar Main Market, Sehore 466115",
-    phone: "+91 7562 266144",
-    lat: 23.0244,
-    lng: 77.0142
-  },
-  {
-    id: "shop-6",
-    name: "Crescent General Kirana",
-    category: "Groceries",
-    rating: 4.2,
-    isOpen: false,
-    address: "Crescent Road, Sehore 466001",
-    phone: "+91 7562 241144",
-    lat: 23.1980,
-    lng: 77.0750
-  }
-];
+export const initialShops = [];
 
 // Custom HTML Markers for Leaflet
 const createUserIcon = () =>
@@ -164,23 +97,58 @@ export default function LocalNeighborhoodMap({
   onSelectShop,
   onHoverShop
 }) {
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+  const [zoomLevel, setZoomLevel] = useState(13);
+  const [activeShop, setActiveShop] = useState(null);
+  const [shops, setShops] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [userPos, setUserPos] = useState(DEFAULT_CENTER);
   const [userAddress, setUserAddress] = useState("Kothri Kalan, Sehore, MP");
-  const [locating, setLocating] = useState(false);
-  const [shops, setShops] = useState(initialShops);
 
-  // Recalculate distances whenever userPos changes
+  // Fetch shops from backend and calculate distances
   useEffect(() => {
-    const updated = initialShops.map((shop) => {
-      const dist = calculateDistance(userPos.lat, userPos.lng, shop.lat, shop.lng);
-      return {
-        ...shop,
-        distanceKm: parseFloat(dist.toFixed(1))
-      };
-    }).sort((a, b) => a.distanceKm - b.distanceKm);
+    const fetchShops = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/api/v1/sellers/all");
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const backendShops = result.data.map((seller) => {
+            const lat = seller.location?.lat || 23.1852 + (Math.random() - 0.5) * 0.1;
+            const lng = seller.location?.lng || 77.0180 + (Math.random() - 0.5) * 0.1;
+            const dist = calculateDistance(userPos.lat, userPos.lng, lat, lng);
+            
+            return {
+              id: seller.authUserId || seller._id,
+              name: seller.businessName || "Local Shop",
+              category: seller.businessType || "Retail",
+              rating: 4.5,
+              isOpen: true,
+              address: seller.addressLine1 || "LocalMart Address",
+              phone: seller.phone || "N/A",
+              lat,
+              lng,
+              distanceKm: parseFloat(dist.toFixed(1))
+            };
+          }).sort((a, b) => a.distanceKm - b.distanceKm);
+          
+          setShops(backendShops);
+          
+          if (backendShops.length > 0) {
+            setMapCenter({ lat: backendShops[0].lat, lng: backendShops[0].lng });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch shops for map:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchShops();
+  }, [userPos]); // Refetch/recalculate if userPos changes (simplified approach)
 
-    setShops(updated);
-  }, [userPos]);
+  const [locating, setLocating] = useState(false);
 
   // Handle Locate Me (GPS)
   const handleLocateMe = () => {

@@ -49,7 +49,7 @@ import {
   updateDeliveryStatusThunk,
 } from '../../redux/features/deliveriesSlice';
 import { showToast } from '../../redux/features/uiSlice';
-import { DELIVERY_STATUS, DELIVERY_STAGES, STATUS_META, nextStopOf } from '../../data/mockDeliveries';
+import { DELIVERY_STATUS, DELIVERY_STAGES, STATUS_META, nextStopOf } from '../../utils/deliveryConstants';
 import { formatCurrency, telHref } from '../../utils/format';
 import {
   formatDistance,
@@ -242,6 +242,9 @@ export default function DeliveryDetail() {
           nextStatus === DELIVERY_STATUS.DELIVERED
             ? `Delivered · ${formatCurrency(delivery.payout)} earned`
             : `Status updated to ${STATUS_META[nextStatus]?.label || nextStatus}`,
+      })
+    );
+  };
 
   const handleAccept = () => {
     dispatch(acceptDeliveryThunk(delivery.id));

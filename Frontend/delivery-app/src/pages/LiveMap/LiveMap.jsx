@@ -43,7 +43,7 @@ import {
   getActiveDeliveries,
   nextStopOf,
   DELIVERY_STATUS,
-} from '../../data/mockDeliveries';
+} from '../../utils/deliveryConstants';
 import {
   formatDistance,
   formatDuration,

@@ -38,27 +38,25 @@ export default function CategorySection({
           setHasMore(false);
         } else {
           const mappedProducts = data.data.map((backendProduct) => {
-            const shopName = backendProduct.brand || "Local Seller";
+            const shopName = backendProduct.brand;
             const price = backendProduct.price;
             const isOpen = backendProduct.status !== "INACTIVE";
-            const distanceKm = Math.floor(Math.random() * 5) + 1;
             
-            const sellerId = backendProduct.sellerId || backendProduct.seller_id || "seller-001";
+            const sellerId = backendProduct.sellerId || backendProduct.seller_id;
             
             return {
               id: backendProduct._id,
               sellerId: sellerId,
               name: backendProduct.name,
-              category: backendProduct.category || "General",
-              rating: backendProduct.rating || 4.5,
+              category: backendProduct.category,
+              rating: backendProduct.rating,
               supportsDelivery: true,
               supportsPickup: true,
               price: price,
               nearestShop: shopName,
-              distanceKm: distanceKm,
               isOpen: isOpen,
               shopCount: 1,
-              shops: [{ shopName, price, distanceKm, isOpen, rating: 4.5, sellerId: sellerId }],
+              shops: [{ shopName, price, isOpen, rating: backendProduct.rating, sellerId: sellerId }],
               images: backendProduct.images || [],
             };
           });

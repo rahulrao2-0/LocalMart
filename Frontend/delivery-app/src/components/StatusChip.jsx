@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chip } from '@mui/material';
-import { STATUS_META } from '../data/mockDeliveries';
+import { STATUS_META } from '../utils/deliveryConstants';
 
 /**
  * Soft-filled status pill driven by STATUS_META, so a new delivery status only

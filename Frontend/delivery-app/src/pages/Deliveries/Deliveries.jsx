@@ -52,7 +52,7 @@ import {
   updateDeliveryStatusThunk,
 } from '../../redux/features/deliveriesSlice';
 import { showToast } from '../../redux/features/uiSlice';
-import { DELIVERY_STATUS, nextStopOf } from '../../data/mockDeliveries';
+import { DELIVERY_STATUS, nextStopOf } from '../../utils/deliveryConstants';
 import { formatCurrency, telHref } from '../../utils/format';
 import { formatDistance, formatDuration, estimateMinutes, buildNavUrl } from '../../utils/geo';
 

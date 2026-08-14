@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiFetch } from '../../utils/api';
 import {
-  mockDeliveries,
+  
   DELIVERY_STATUS,
   DELIVERY_STAGES,
   activeStatuses,
-} from '../../data/mockDeliveries';
+} from '../../utils/deliveryConstants';
 
 /**
  * Holds the driver's job board.

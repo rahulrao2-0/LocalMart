@@ -91,3 +91,20 @@ export const getSellerProfile = async (req, res) => {
     });
   }
 };
+
+// 3. Get All Sellers (for map)
+export const getAllSellers = async (req, res) => {
+  try {
+    const sellers = await Seller.find({});
+    return res.status(200).json({
+      success: true,
+      data: sellers,
+    });
+  } catch (error) {
+    console.error("Get All Sellers Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};

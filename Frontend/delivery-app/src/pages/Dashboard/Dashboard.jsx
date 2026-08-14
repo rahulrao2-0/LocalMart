@@ -47,7 +47,7 @@ import { PIN_COLORS } from '../../components/Map/mapIcons';
 import { fetchDashboardData } from '../../redux/features/dashboardSlice';
 import { setDuty } from '../../redux/features/uiSlice';
 import { selectDeliveries, fetchDeliveries } from '../../redux/features/deliveriesSlice';
-import { getActiveDeliveries, getNewDeliveries, nextStopOf } from '../../data/mockDeliveries';
+import { getActiveDeliveries, getNewDeliveries, nextStopOf } from '../../utils/deliveryConstants';
 import { formatCurrency, formatCompactCurrency, formatRelative } from '../../utils/format';
 import { formatDistance, orderByProximity } from '../../utils/geo';
 

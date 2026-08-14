@@ -39,7 +39,7 @@ import StatCard from '../../components/StatCard';
 import { fetchDashboardData } from '../../redux/features/dashboardSlice';
 import { formatCurrency, formatCompactCurrency, formatDate } from '../../utils/format';
 import { formatDistance } from '../../utils/geo';
-import { mockHistory } from '../../data/mockDeliveries';
+import { mockHistory } from '../../utils/deliveryConstants';
 
 const PAYOUTS = [
   { id: 'PAY-4471', date: '2026-08-10T09:00:00', amount: 7420, status: 'Settled', mode: 'UPI · HDFC ••4412' },

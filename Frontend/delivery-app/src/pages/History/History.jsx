@@ -36,7 +36,7 @@ import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import StatusChip from '../../components/StatusChip';
 import { selectDeliveries, fetchDeliveries } from '../../redux/features/deliveriesSlice';
-import { DELIVERY_STATUS } from '../../data/mockDeliveries';
+import { DELIVERY_STATUS } from '../../utils/deliveryConstants';
 import { formatCurrency, formatDate, formatTime } from '../../utils/format';
 import { formatDistance, formatDuration } from '../../utils/geo';
 

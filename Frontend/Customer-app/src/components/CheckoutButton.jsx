@@ -33,9 +33,9 @@ export default function CheckoutButton({ cartAmount, userId, sellerId, items, sh
         body: JSON.stringify({ 
           totalAmount: cartAmount, 
           customerId: userId,
-          sellerId: sellerId || "dummy_seller_id",
-          items: items || [{ productId: "p1", productName: "Item", quantity: 1, price: cartAmount, subtotal: cartAmount }],
-          shippingAddress: shippingAddress || { address: "123 Main St", city: "City", postalCode: "12345", country: "IN" },
+          sellerId: sellerId,
+          items: items,
+          shippingAddress: shippingAddress,
           subtotal: cartAmount,
           paymentMethod: "RAZORPAY"
         }),

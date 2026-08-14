@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiFetch } from '../../utils/api';
-import { mockHistory } from '../../data/mockDeliveries';
+import { mockHistory } from '../../utils/deliveryConstants';
 
 export const fetchDashboardData = createAsyncThunk(
   'dashboard/fetchData',

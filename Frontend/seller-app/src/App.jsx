@@ -42,6 +42,20 @@ function App() {
     }
   }, [themeMode]);
 
+  // Explicitly ask for location permissions on app startup
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("Seller location granted:", position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.warn("Seller location permission denied or failed:", error.message);
+        }
+      );
+    }
+  }, []);
+
   const toggleTheme = () => {
     setThemeMode((prev) => (prev === "light" ? "dark" : "light"));
   };

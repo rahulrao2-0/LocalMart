@@ -38,6 +38,21 @@ function App() {
     dispatch(fetchCart());
   }, [dispatch]);
 
+  // Explicitly ask for location permissions on app startup
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      // Just requesting the position will trigger the browser permission prompt
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("Customer location granted:", position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.warn("Customer location permission denied or failed:", error.message);
+        }
+      );
+    }
+  }, []);
+
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
 
   const toggleTheme = () => {

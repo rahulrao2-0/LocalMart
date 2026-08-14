@@ -135,8 +135,7 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
         cart[0]?.product?.seller_id ||
         cart[0]?.sellerId ||
         cart[0]?.seller_id ||
-        cart[0]?.shop?.id ||
-        "dummy_seller_id";
+        cart[0]?.shop?.id;
 
       const customerName = user?.fullName || user?.full_name || user?.username || user?.name || "Customer";
       const customerEmail = user?.email || "";

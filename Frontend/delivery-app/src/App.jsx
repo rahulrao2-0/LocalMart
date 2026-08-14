@@ -1,4 +1,7 @@
 import React, { useMemo } from 'react';
+import { io } from 'socket.io-client';
+import { fetchDeliveries } from './redux/features/deliveriesSlice';
+import { fetchDashboardData } from './redux/features/dashboardSlice';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ThemeProvider, CssBaseline, Snackbar, Alert } from '@mui/material';
@@ -30,9 +33,51 @@ function GlobalToast() {
   );
 }
 
+function SocketManager() {
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+
+  React.useEffect(() => {
+    if (!user) return;
+    const userId = user.id || user._id;
+    if (!userId) return;
+
+    const socket = io('http://localhost:5003');
+    socket.on('connect', () => {
+      socket.emit('join', userId);
+      console.log('? Connected to live websocket streams');
+    });
+
+    socket.on('notification', (newNotif) => {
+      console.log('?? Live Notification Received:', newNotif);
+      // If a new delivery is assigned, or status is updated, refresh Redux
+      dispatch(fetchDeliveries());
+      dispatch(fetchDashboardData());
+    });
+
+    return () => socket.disconnect();
+  }, [user, dispatch]);
+
+  return null;
+}
+
 function App() {
   const themeMode = useSelector((state) => state.ui.themeMode);
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);
+
+  // Explicitly ask for location permissions on app startup
+  React.useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          console.log("Delivery location granted:", position.coords.latitude, position.coords.longitude);
+        },
+        (error) => {
+          console.warn("Delivery location permission denied or failed:", error.message);
+        }
+      );
+    }
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>
@@ -41,6 +86,7 @@ function App() {
         <AppRoutes />
       </Router>
       <GlobalToast />
+      <SocketManager />
     </ThemeProvider>
   );
 }
