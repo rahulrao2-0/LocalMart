@@ -8,21 +8,36 @@ import EmptyState from '../components/EmptyState';
 import useGeolocation from '../hooks/useGeolocation';
 import { apiFetch } from '../utils/api';
 
+import socket from '../utils/socket';
+
 const LocationTracker = () => {
   const { position, error } = useGeolocation({ watch: true });
   const { user } = useSelector((state) => state.auth);
+  const activeDeliveries = useSelector((state) => 
+    state.deliveries?.items?.filter(d => 
+      ['ACCEPTED', 'PICKED_UP', 'IN_TRANSIT'].includes(d.status)
+    )
+  );
   
   useEffect(() => {
     if (!position || !user) return;
     
-    const interval = setInterval(async () => {
+    const interval = setInterval(() => {
       try {
         console.log(`📍 Updating location for ${user.id} to:`, position.lat, position.lng);
-        // Note: Real endpoint for location update needs to be added to backend
-        // await apiFetch(`/delivery/partner/${user.id}/location`, {
-        //   method: 'PUT',
-        //   body: JSON.stringify({ lat: position.lat, lng: position.lng })
-        // });
+        
+        // Emit to websocket if there are active deliveries
+        if (activeDeliveries && activeDeliveries.length > 0) {
+          activeDeliveries.forEach(order => {
+            socket.emit('updateLocation', {
+              partnerId: user.id || user._id,
+              orderId: order.id || order.orderId,
+              lat: position.lat,
+              lng: position.lng
+            });
+          });
+        }
+
       } catch (err) {
         console.error('Failed to update location:', err);
       }

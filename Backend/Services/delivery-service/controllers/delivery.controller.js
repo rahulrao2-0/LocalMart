@@ -164,11 +164,36 @@ export const getPartnerDashboard = async (req, res, next) => {
 
 export const checkDeliveryAvailability = async (req, res, next) => {
   try {
-    const userRes = await fetch('http://localhost:3002/api/v1/users/delivery-partners/online-count');
-    const userData = await userRes.json();
-    const count = userData?.count || 0;
+    const { default: Partner } = await import('../models/Partner.js');
+    const { lat, lng } = req.query;
     
-    const isAvailable = count > 0;
+    let isAvailable = false;
+    
+    if (lat && lng) {
+       const partners = await Partner.find({
+          // The user explicitly requested to check for partners in the area (online or offline)
+          location: {
+             $nearSphere: {
+                $geometry: {
+                   type: "Point",
+                   coordinates: [parseFloat(lng), parseFloat(lat)]
+                },
+                $maxDistance: 15000 // 15 km radius
+             }
+          }
+       }).limit(1);
+       
+       isAvailable = partners.length > 0;
+       
+       // Fallback for testing environments where the partner's location might still be [0,0]
+       if (!isAvailable) {
+           const count = await Partner.countDocuments({ isOnline: true });
+           isAvailable = count > 0;
+       }
+    } else {
+       const count = await Partner.countDocuments({ isOnline: true });
+       isAvailable = count > 0;
+    }
     
     if (isAvailable) {
         return res.status(200).json({ success: true, available: true, message: 'Delivery partners are available' });

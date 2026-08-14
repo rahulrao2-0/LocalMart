@@ -45,7 +45,7 @@ import DeliveryMap from '../../components/Map/DeliveryMap';
 import useGeolocation from '../../hooks/useGeolocation';
 import { PIN_COLORS } from '../../components/Map/mapIcons';
 import { fetchDashboardData } from '../../redux/features/dashboardSlice';
-import { setDuty } from '../../redux/features/uiSlice';
+import { setDuty, toggleDutyStatus } from '../../redux/features/uiSlice';
 import { selectDeliveries, fetchDeliveries } from '../../redux/features/deliveriesSlice';
 import { getActiveDeliveries, getNewDeliveries, nextStopOf } from '../../utils/deliveryConstants';
 import { formatCurrency, formatCompactCurrency, formatRelative } from '../../utils/format';
@@ -192,7 +192,7 @@ const Dashboard = () => {
               <Button
                 fullWidth
                 variant="contained"
-                onClick={() => dispatch(setDuty(!isOnDuty))}
+                onClick={() => dispatch(toggleDutyStatus(!isOnDuty))}
                 startIcon={<PowerSettingsNewRoundedIcon />}
                 sx={{
                   bgcolor: '#fff',

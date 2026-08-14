@@ -1,5 +1,6 @@
 import { kafka, TOPICS } from "@localmart/shared";
 import Delivery from "../models/Delivery.js";
+import Partner from "../models/Partner.js";
 
 export const startDeliveryConsumer = async () => {
   try {
@@ -7,7 +8,7 @@ export const startDeliveryConsumer = async () => {
     await consumer.connect();
     console.log("✅ Kafka Consumer connected for Delivery Service");
 
-    await consumer.subscribe({ topics: [TOPICS.ORDER_EVENTS], fromBeginning: false });
+    await consumer.subscribe({ topics: [TOPICS.ORDER_EVENTS, TOPICS.USER_EVENTS], fromBeginning: false });
     
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
@@ -19,6 +20,21 @@ export const startDeliveryConsumer = async () => {
           console.log(`📥 [DELIVERY SERVICE] Received KAFKA EVENT: ${event.type}`);
           console.log(`======================================================`);
           console.log("Event Data:", event.data);
+
+          if (topic === TOPICS.USER_EVENTS) {
+             if (event.type === "DELIVERY_PARTNER_STATUS_CHANGED") {
+                const { partnerId, isOnline, location } = event.data;
+                const update = { isOnline };
+                if (location) update.location = location;
+
+                await Partner.findOneAndUpdate(
+                  { partnerId },
+                  update,
+                  { upsert: true, new: true }
+                );
+                console.log(`✅ [DELIVERY SERVICE] Updated Partner ${partnerId} online status to ${isOnline}`);
+             }
+          }
           
           if (topic === TOPICS.ORDER_EVENTS) {
             const order = event.data;

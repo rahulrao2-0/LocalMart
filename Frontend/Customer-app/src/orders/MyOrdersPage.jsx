@@ -47,6 +47,7 @@ import {
   TaskAlt as TaskAltIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
+import LiveTrackingMap from "./LiveTrackingMap";
 
 const ORDER_STEPS = [
   { label: "Order Placed", key: "PENDING" },
@@ -338,9 +339,26 @@ export default function MyOrdersPage({ themeMode }) {
                     </Alert>
                   )}
 
-                  {/* Collapsible Timeline Events */}
+                  {/* Collapsible Timeline Events & Live Map */}
                   <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                     <Box sx={{ p: 2, my: 2, bgcolor: alpha(theme.palette.primary.main, 0.04), borderRadius: 3, border: "1px solid", borderColor: alpha(theme.palette.primary.main, 0.1) }}>
+                      
+                      {/* Live Tracking Map (show if actively delivering) */}
+                      {!isCancelled && !isDelivered && (
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="subtitle2" fontWeight={800} gutterBottom sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                            <StorefrontIcon fontSize="small" color="primary" /> Live Delivery Tracking
+                          </Typography>
+                          <LiveTrackingMap 
+                            orderId={orderId} 
+                            customerLocation={order.shippingAddress?.location || { lat: 28.7041, lng: 77.1025 }} 
+                            storeLocation={order.storeLocation || { lat: 23.1852, lng: 77.0180 }} 
+                            partnerId={order.deliveryPartnerId}
+                            orderStatus={order.orderStatus}
+                          />
+                        </Box>
+                      )}
+
                       <Typography variant="subtitle2" fontWeight={800} gutterBottom sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
                         <AccessTimeIcon fontSize="small" color="primary" /> Order Timeline & Activity Log
                       </Typography>

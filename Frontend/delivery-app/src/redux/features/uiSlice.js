@@ -1,4 +1,5 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { apiFetch } from '../../utils/api';
 
 const THEME_KEY = 'delivery_theme_mode';
 const DUTY_KEY = 'delivery_duty_status';
@@ -29,12 +30,48 @@ const prefersDark = () => {
   }
 };
 
+export const toggleDutyStatus = createAsyncThunk(
+  'ui/toggleDutyStatus',
+  async (isOnline, { rejectWithValue, dispatch }) => {
+    try {
+      // Optimistic update
+      dispatch(uiSlice.actions.setDuty(isOnline));
+
+      let lat = null;
+      let lng = null;
+
+      // Ask delivery man for location share if going online
+      if (isOnline && navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+          });
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        } catch (geoErr) {
+          console.warn('Geolocation failed or denied. Proceeding without location.', geoErr);
+        }
+      }
+
+      const res = await apiFetch('/users/delivery-partners/status', {
+        method: 'PUT',
+        body: JSON.stringify({ isOnline, lat, lng })
+      });
+      return res;
+    } catch (error) {
+      // Revert on failure
+      dispatch(uiSlice.actions.setDuty(!isOnline));
+      return rejectWithValue(error.message || 'Failed to update duty status');
+    }
+  }
+);
+
 const initialState = {
   themeMode: readStored(THEME_KEY, null) ?? (prefersDark() ? 'dark' : 'light'),
   sidebarCollapsed: readStored(SIDEBAR_KEY, false),
   mobileNavOpen: false,
   // Driver duty status — drives the topbar switch and gates job acceptance.
-  isOnDuty: readStored(DUTY_KEY, true),
+  isOnDuty: readStored(DUTY_KEY, false), // Default to false so they have to explicitly go online
   // Published by the Notifications page so the topbar/sidebar badges stay in sync.
   unreadCount: 0,
   toast: null, // { message, severity }

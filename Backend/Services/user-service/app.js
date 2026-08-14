@@ -24,6 +24,15 @@ app.use("/api/v1/sellers", sellerRoutes);
 const startServer = async () => {
   await connectDB();
   configureCloudinary();
+  
+  try {
+    const { connectProducer } = await import("@localmart/shared");
+    await connectProducer();
+    console.log("🚀 Kafka Producer Connected for User Service");
+  } catch (err) {
+    console.error("❌ Kafka Producer Failed in User Service:", err.message);
+  }
+
   await startUserConsumer();
 
   app.listen(port, () => {

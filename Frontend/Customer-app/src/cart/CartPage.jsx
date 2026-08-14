@@ -158,19 +158,9 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
         lng: user?.addresses?.[0]?.lng || user?.location?.coordinates?.[0] || 77.1025,
       };
 
-      if (deliveryMethod === "delivery") {
-        try {
-          const availRes = await fetch("http://localhost:3000/api/v1/delivery/availability", { credentials: "include" });
-          const availData = await availRes.json();
-          if (availData && !availData.available) {
-            setPromoError(availData.message || "High demand! No delivery partners available right now. Please try again later.");
-            setIsCheckingOut(false);
-            return;
-          }
-        } catch (err) {
-          console.error("Availability check failed", err);
-        }
-      }
+
+
+
 
       // 1. Create Order in Backend via API Gateway (Port 3000)
       const orderRes = await fetch("http://localhost:3000/api/v1/orders/", {

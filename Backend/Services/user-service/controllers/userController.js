@@ -81,7 +81,7 @@ export const getProfileInternal = async (req, res) => {
 
 export const getOnlineDeliveryPartnersCount = async (req, res) => {
   try {
-    const { default: DeliveryPartner } = await import('../models/DeliveryPartner.js');
+    const { DeliveryPartner } = await import('../models/DeliveryPartner.js');
     const count = await DeliveryPartner.countDocuments({ isOnline: true });
     return res.status(200).json({
       success: true,
@@ -93,6 +93,58 @@ export const getOnlineDeliveryPartnersCount = async (req, res) => {
       success: false,
       message: "Internal Server Error",
     });
+  }
+};
+
+export const updateDeliveryPartnerStatus = async (req, res) => {
+  try {
+    const { isOnline, lat, lng } = req.body;
+    const { DeliveryPartner } = await import('../models/DeliveryPartner.js');
+    
+    const updatePayload = { isOnline };
+    // If frontend successfully shared real coordinates, update the location
+    if (lat !== undefined && lng !== undefined && lat !== null && lng !== null) {
+      updatePayload.location = {
+        type: "Point",
+        coordinates: [parseFloat(lng), parseFloat(lat)]
+      };
+    }
+    
+    // Delivery partners use userId as authUserId
+    const partner = await DeliveryPartner.findOneAndUpdate(
+      { authUserId: req.user.userId },
+      { 
+        ...updatePayload,
+        // Ensure location is initialized if upserting and no location was provided
+        $setOnInsert: updatePayload.location ? {} : { location: { type: "Point", coordinates: [77.1025, 28.7041] } }
+      },
+      { new: true, upsert: true }
+    );
+
+    if (!partner) {
+      return res.status(404).json({ success: false, message: "Delivery partner not found" });
+    }
+
+
+
+    try {
+      const { publishEvent, TOPICS } = await import('@localmart/shared');
+      await publishEvent(TOPICS.USER_EVENTS, {
+        type: "DELIVERY_PARTNER_STATUS_CHANGED",
+        data: { 
+          partnerId: partner.authUserId, 
+          isOnline: partner.isOnline,
+          location: partner.location
+        }
+      });
+    } catch (kafkaErr) {
+      console.error("Failed to publish status change event:", kafkaErr);
+    }
+
+    return res.status(200).json({ success: true, isOnline: partner.isOnline });
+  } catch (error) {
+    console.error("Update Delivery Partner Status Error:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 

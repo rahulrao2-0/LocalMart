@@ -33,6 +33,8 @@ function GlobalToast() {
   );
 }
 
+import socket from './utils/socket';
+
 function SocketManager() {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
@@ -42,14 +44,19 @@ function SocketManager() {
     const userId = user.id || user._id;
     if (!userId) return;
 
-    const socket = io('http://localhost:5003');
+    socket.connect();
+    
+    // We only want to attach these listeners once, so remove any previous ones
+    socket.off('connect');
+    socket.off('notification');
+
     socket.on('connect', () => {
       socket.emit('join', userId);
-      console.log('? Connected to live websocket streams');
+      console.log('🔗 Connected to live websocket streams');
     });
 
     socket.on('notification', (newNotif) => {
-      console.log('?? Live Notification Received:', newNotif);
+      console.log('🔔 Live Notification Received:', newNotif);
       // If a new delivery is assigned, or status is updated, refresh Redux
       dispatch(fetchDeliveries());
       dispatch(fetchDashboardData());
