@@ -137,6 +137,3 @@ npm run dev
 
 ---
 
-## 📄 License
-
-_Add your license here._
