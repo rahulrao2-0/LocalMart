@@ -53,7 +53,7 @@ export const toggleDutyStatus = createAsyncThunk(
         }
       }
 
-      const res = await apiFetch('/users/delivery-partners/status', {
+      const res = await apiFetch('/delivery/status', {
         method: 'PUT',
         body: JSON.stringify({ isOnline, lat, lng })
       });

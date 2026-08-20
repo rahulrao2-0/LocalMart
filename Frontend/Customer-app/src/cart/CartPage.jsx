@@ -137,6 +137,8 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
         cart[0]?.seller_id ||
         cart[0]?.shop?.id;
 
+        console.log("Primary Seller ID in cart service:", primarySellerId);
+
       const customerName = user?.fullName || user?.full_name || user?.username || user?.name || "Customer";
       const customerEmail = user?.email || "";
 
@@ -161,6 +163,31 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
 
 
 
+
+      // Pre-check delivery partner availability within 15 km before checkout / payment
+      if (deliveryMethod === "delivery") {
+        try {
+          const lat = defaultAddress.lat;
+          const lng = defaultAddress.lng;
+          const availUrl = lat && lng 
+            ? `http://localhost:3000/api/v1/delivery/availability?lat=${lat}&lng=${lng}`
+            : `http://localhost:3000/api/v1/delivery/availability`;
+
+          const availRes = await fetch(availUrl, {
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+          });
+          const availData = await availRes.json();
+
+          if (availRes.ok && availData.available === false) {
+            setPromoError(availData.message || "High demand! No delivery partner is available within 15km in your area right now.");
+            setIsCheckingOut(false);
+            return;
+          }
+        } catch (availErr) {
+          console.warn("Could not verify delivery partner availability:", availErr);
+        }
+      }
 
       // 1. Create Order in Backend via API Gateway (Port 3000)
       const orderRes = await fetch("http://localhost:3000/api/v1/orders/", {

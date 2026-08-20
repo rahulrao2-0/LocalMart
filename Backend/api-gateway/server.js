@@ -31,12 +31,12 @@ const handleProxyError = (err, req, res) => {
 // --- Rate Limiting Setup (Token Bucket) ---
 
 const authRateLimiter = new RateLimiterMemory({
-  points: 5,        // Capacity (burst)
+  points: 10,        // Capacity (burst)
   duration: 60,     // Refill window in seconds
 });
 
 const orderRateLimiter = new RateLimiterMemory({
-  points: 20,       
+  points: 30,       
   duration: 60,     
 });
 

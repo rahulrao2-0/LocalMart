@@ -163,34 +163,36 @@ export const getPartnerDashboard = async (req, res, next) => {
 };
 
 export const checkDeliveryAvailability = async (req, res, next) => {
+  console.log("Checking delivery availability ");
   try {
     const { default: Partner } = await import('../models/Partner.js');
     const { lat, lng } = req.query;
     
     let isAvailable = false;
     
-    if (lat && lng) {
+    if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+       const parsedLat = parseFloat(lat);
+       const parsedLng = parseFloat(lng);
+
+       // Find partners that are online and within 15 km radius
        const partners = await Partner.find({
-          // The user explicitly requested to check for partners in the area (online or offline)
+          isOnline: true,
           location: {
              $nearSphere: {
                 $geometry: {
                    type: "Point",
-                   coordinates: [parseFloat(lng), parseFloat(lat)]
+                   coordinates: [parsedLng, parsedLat]
                 },
-                $maxDistance: 15000 // 15 km radius
+                $maxDistance: 15000 // 15 km radius in meters
              }
           }
        }).limit(1);
+
+       console.log(`Found ${partners.length} delivery partners within 15km of (${parsedLat}, ${parsedLng})`);
        
        isAvailable = partners.length > 0;
-       
-       // Fallback for testing environments where the partner's location might still be [0,0]
-       if (!isAvailable) {
-           const count = await Partner.countDocuments({ isOnline: true });
-           isAvailable = count > 0;
-       }
     } else {
+       // If no lat/lng provided, check if any delivery partner is online
        const count = await Partner.countDocuments({ isOnline: true });
        isAvailable = count > 0;
     }
@@ -198,9 +200,50 @@ export const checkDeliveryAvailability = async (req, res, next) => {
     if (isAvailable) {
         return res.status(200).json({ success: true, available: true, message: 'Delivery partners are available' });
     } else {
-        return res.status(200).json({ success: true, available: false, message: 'High demand! No delivery partners available right now.' });
+        return res.status(200).json({ success: true, available: false, message: 'High demand! No delivery partners available within 15km right now.' });
     }
   } catch (error) {
     next(error);
   }
 };
+
+export const updatePartnerStatus = async (req, res, next) => {
+  try {
+    const { default: Partner } = await import('../models/Partner.js');
+    const partnerId = req.user?.id || req.body.partnerId;
+    const { isOnline, lat, lng } = req.body;
+
+    if (!partnerId) {
+      return res.status(400).json({ success: false, message: "Partner ID is required." });
+    }
+
+    const updatePayload = { isOnline: Boolean(isOnline) };
+    if (lat !== undefined && lng !== undefined && lat !== null && lng !== null && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+      updatePayload.location = {
+        type: "Point",
+        coordinates: [parseFloat(lng), parseFloat(lat)]
+      };
+    }
+
+    const partner = await Partner.findOneAndUpdate(
+      { partnerId },
+      {
+        ...updatePayload,
+        $setOnInsert: updatePayload.location ? {} : { location: { type: "Point", coordinates: [77.1025, 28.7041] } }
+      },
+      { new: true, upsert: true }
+    );
+
+    console.log(`Partner ${partnerId} status updated to ${partner.isOnline ? 'Online' : 'Offline'}. Location: ${partner.location ? `(${partner.location.coordinates[1]}, ${partner.location.coordinates[0]})` : 'Not provided'}`);
+
+    return res.status(200).json({
+      success: true,
+      message: `Partner status updated to ${partner.isOnline ? 'Online' : 'Offline'}`,
+      isOnline: partner.isOnline,
+      data: partner
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

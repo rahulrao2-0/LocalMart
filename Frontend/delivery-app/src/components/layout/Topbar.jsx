@@ -32,8 +32,8 @@ import { findNavItem } from './navConfig';
 import {
   setMobileNavOpen,
   toggleThemeMode,
-  toggleDuty,
   showToast,
+  toggleDutyStatus
 } from '../../redux/features/uiSlice';
 
 const initialsOf = (name = '') =>
@@ -59,7 +59,7 @@ export default function Topbar({ onLogout }) {
   const isDark = themeMode === 'dark';
 
   const handleDuty = () => {
-    dispatch(toggleDuty());
+    dispatch(toggleDutyStatus(!isOnDuty));
     dispatch(
       showToast({
         message: isOnDuty ? 'You are now offline — no new jobs' : "You're online and receiving jobs",
