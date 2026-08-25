@@ -1,16 +1,26 @@
-import mongoose from 'mongoose';
-import { env } from './env.js';
+import mongoose from "mongoose";
+import { env } from "./env.js";
 
 const connectDB = async () => {
-    try {
-        await mongoose.connect(env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        console.log('MongoDB connected for Inventory Service');
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        process.exit(1);
+    while (true) {
+        try {
+            await mongoose.connect(env.MONGO_URI, {
+                serverSelectionTimeoutMS: 5000,
+                connectTimeoutMS: 5000,
+            });
+
+            console.log("MongoDB connected successfully");
+            break;
+
+        } catch (error) {
+            console.error(
+                "MongoDB connection failed: " + error.message
+            );
+
+            console.log("Retrying in 5 seconds...");
+
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
     }
 };
 
