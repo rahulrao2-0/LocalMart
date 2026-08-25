@@ -157,7 +157,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/notifications",
-    target: "http://localhost:5003",
+    target: "http://localhost:3009",
     changeOrigin: true,
     pathRewrite: { "^/api/v1": "/api" },
     /* on: { error: handleProxyError } */

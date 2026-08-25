@@ -51,7 +51,7 @@ app.use('/api/notifications', notificationRoutes);
 // Global Error Handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5003;
+const PORT = process.env.PORT || 3009;
 
 httpServer.listen(PORT, () => {
     console.log(`Notification Service running on port ${PORT}`);
