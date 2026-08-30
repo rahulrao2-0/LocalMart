@@ -28,7 +28,7 @@ import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { setUnreadCount, showToast } from '../../redux/features/uiSlice';
 import { formatRelative } from '../../utils/format';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, API_BASE_URL } from '../../utils/api';
 
 const TYPE_META = {
   job: { icon: TwoWheelerRoundedIcon, tone: 'primary', label: 'Job' },
@@ -57,7 +57,7 @@ export default function Notifications() {
   const fetchNotifications = async () => {
     if (!userId) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/notifications?userId=${userId}`, { credentials: "include" });
+      const res = await fetch(`${API_BASE_URL}/notifications?userId=${userId}`, { credentials: "include" });
       const data = await res.json();
       if (data && data.success) {
         setItems(data.data || []);
@@ -84,7 +84,7 @@ export default function Notifications() {
 
   const markAllRead = async () => {
     try {
-      await fetch(`http://localhost:3000/api/v1/notifications/read-all?userId=${userId}`, { method: 'PUT', credentials: 'include' });
+      await fetch(`${API_BASE_URL}/notifications/read-all?userId=${userId}`, { method: 'PUT', credentials: 'include' });
       setItems((list) => list.map((item) => ({ ...item, isRead: true })));
       dispatch(showToast({ message: 'All notifications marked as read', severity: 'success' }));
     } catch (err) {
@@ -94,7 +94,7 @@ export default function Notifications() {
 
   const openItem = async (item) => {
     try {
-      await fetch(`http://localhost:3000/api/v1/notifications/${item._id}/read?userId=${userId}`, { method: 'PUT', credentials: 'include' });
+      await fetch(`${API_BASE_URL}/notifications/${item._id}/read?userId=${userId}`, { method: 'PUT', credentials: 'include' });
       setItems((list) => list.map((entry) => (entry._id === item._id ? { ...entry, isRead: true } : entry)));
     } catch (err) {}
     
@@ -108,7 +108,7 @@ export default function Notifications() {
   const remove = async (event, id) => {
     event.stopPropagation();
     try {
-      await fetch(`http://localhost:3000/api/v1/notifications/${id}?userId=${userId}`, { method: 'DELETE', credentials: 'include' });
+      await fetch(`${API_BASE_URL}/notifications/${id}?userId=${userId}`, { method: 'DELETE', credentials: 'include' });
       setItems((list) => list.filter((item) => item._id !== id));
     } catch (err) {
       console.error(err);

@@ -76,7 +76,7 @@ export default function LiveTrackingMap({ orderId, storeLocation, customerLocati
   useEffect(() => {
     if (!orderId) return;
 
-    const socket = io("http://localhost:5003");
+    const socket = io("http://localhost:3009");
 
     socket.on("connect", () => {
       console.log("Connected to tracking socket for order:", orderId);

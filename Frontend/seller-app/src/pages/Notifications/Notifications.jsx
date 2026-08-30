@@ -64,7 +64,7 @@ export default function Notifications() {
   useEffect(() => {
     if (!userId) return;
 
-    const socket = io('http://localhost:5003');
+    const socket = io('http://localhost:3009');
     socket.on('connect', () => {
       socket.emit('join', userId);
     });

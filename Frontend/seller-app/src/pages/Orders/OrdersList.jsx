@@ -12,6 +12,7 @@ import SearchIcon from '@mui/icons-material/SearchRounded';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLongRounded';
 import CancelIcon from '@mui/icons-material/CancelRounded';
 import CloseIcon from '@mui/icons-material/CloseRounded';
+import DeleteIcon from '@mui/icons-material/DeleteRounded';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 
@@ -143,7 +144,7 @@ const StatusSelect = ({ status, orderId, onChange, fullWidth }) => (
 );
 
 /** Row rendered as a card below `md`, where the 6-column table can't fit. */
-const OrderCard = ({ order, onStatusChange }) => {
+const OrderCard = ({ order, onStatusChange, onDelete }) => {
   const theme = useTheme();
   const o = readOrder(order);
   const color = statusColors[o.status] || 'default';
@@ -211,7 +212,12 @@ const OrderCard = ({ order, onStatusChange }) => {
         </Box>
       )}
 
-      <StatusSelect fullWidth status={o.status} orderId={o.id} onChange={onStatusChange} />
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <StatusSelect fullWidth status={o.status} orderId={o.id} onChange={onStatusChange} />
+        <IconButton color="error" onClick={() => onDelete(o.id)} aria-label="delete order">
+          <DeleteIcon />
+        </IconButton>
+      </Box>
     </Paper>
   );
 };
@@ -268,6 +274,19 @@ const OrdersList = () => {
       console.error("Failed to cancel order:", err);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (window.confirm("Are you sure you want to delete this order? (Backend route must be implemented manually)")) {
+      try {
+        await fetch(`http://localhost:3000/api/v1/orders/${orderId}`, {
+          method: 'DELETE',
+        });
+        dispatch(fetchOrders(sellerId));
+      } catch (err) {
+        console.error("Failed to delete order:", err);
+      }
     }
   };
 
@@ -414,6 +433,7 @@ const OrdersList = () => {
                 key={order.id || order._id}
                 order={order}
                 onStatusChange={handleStatusChange}
+                onDelete={handleDeleteOrder}
               />
             ))}
           </Stack>
@@ -501,7 +521,12 @@ const OrdersList = () => {
                         />
                       </TableCell>
                       <TableCell align="center">
-                        <StatusSelect status={o.status} orderId={o.id} onChange={handleStatusChange} />
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <StatusSelect status={o.status} orderId={o.id} onChange={handleStatusChange} />
+                          <IconButton color="error" onClick={() => handleDeleteOrder(o.id)} size="small" aria-label="delete order">
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );

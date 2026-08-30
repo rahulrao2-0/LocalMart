@@ -87,7 +87,7 @@ app.use(generalLimit); // General limiter for all other routes
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/auth",
-    target: "http://localhost:3001",
+    target: process.env.AUTH_SERVICE_URL || "http://localhost:3001",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -97,7 +97,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/users",
-    target: "http://localhost:3002",
+    target: process.env.USER_SERVICE_URL || "http://localhost:3002",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -107,7 +107,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/products",
-    target: "http://localhost:3003",
+    target: process.env.PRODUCT_SERVICE_URL || "http://localhost:3003",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -117,7 +117,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/sellers",
-    target: "http://localhost:3002",
+    target: process.env.SELLER_SERVICE_URL || "http://localhost:3002",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -127,7 +127,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/orders",
-    target: "http://localhost:3004",
+    target: process.env.ORDER_SERVICE_URL || "http://localhost:3004",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -137,7 +137,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/payments",
-    target: "http://localhost:3005",
+    target: process.env.PAYMENT_SERVICE_URL || "http://localhost:3005",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -147,7 +147,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/inventory",
-    target: "http://localhost:3007",
+    target: process.env.INVENTORY_SERVICE_URL || "http://localhost:3007",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
@@ -157,7 +157,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/notifications",
-    target: "http://localhost:3009",
+    target: process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3009",
     changeOrigin: true,
     pathRewrite: { "^/api/v1": "/api" },
     /* on: { error: handleProxyError } */
@@ -168,7 +168,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/cart",
-    target: "http://localhost:3006",
+    target: process.env.CART_SERVICE_URL || "http://localhost:3006",
     changeOrigin: true,
     pathRewrite: { "^/api/v1/cart": "/cart" },
     /* on: { error: handleProxyError } */
@@ -179,7 +179,7 @@ app.use(
 app.use(
   createProxyMiddleware({
     pathFilter: "/api/v1/delivery",
-    target: "http://localhost:3008",
+    target: process.env.DELIVERY_SERVICE_URL || "http://localhost:3008",
     changeOrigin: true,
     /* on: { error: handleProxyError } */
   })
