@@ -344,3 +344,26 @@ export const rejectDelivery = async (req, res, next) => {
     next(error);
   }
 };
+
+// Delete order
+export const deleteOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    await Order.findByIdAndDelete(req.params.id);
+
+    // Optionally publish an ORDER_DELETED event if other services need to know
+    // await publishEvent(TOPICS.ORDER_EVENTS, {
+    //   type: "ORDER_DELETED",
+    //   data: { orderId: req.params.id },
+    // });
+
+    res.status(200).json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -197,7 +197,7 @@ export default function LocalNeighborhoodMap({
             Live Neighborhood Map
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <Tooltip title="Locate my position (GPS)">
             <IconButton
               size="small"
@@ -279,7 +279,7 @@ export default function LocalNeighborhoodMap({
                         {shop.address}
                       </Typography>
 
-                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 1 }}>
                         <Chip
                           size="small"
                           label={`${shop.distanceKm} km away`}
@@ -369,7 +369,7 @@ export default function LocalNeighborhoodMap({
                   "&:hover": { borderColor: "primary.light", transform: "translateX(4px)" }
                 }}
               >
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
                   <StorefrontIcon color={isSelected ? "primary" : "action"} fontSize="small" />
                   <Box>
                     <Typography variant="subtitle2" fontWeight={700} noWrap sx={{ maxWidth: 180 }}>
@@ -380,7 +380,7 @@ export default function LocalNeighborhoodMap({
                     </Typography>
                   </Box>
                 </Stack>
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                   <Chip
                     size="small"
                     label={`${shop.distanceKm} km`}

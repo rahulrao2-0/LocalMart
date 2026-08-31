@@ -195,7 +195,7 @@ export default function ProductCard({ product, onAddToCart, onClick, mode = "del
       {/* Content Area */}
       <CardContent sx={{ p: 2, flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         <Box>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
+          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
             <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
               <StarIcon sx={{ fontSize: 13, color: "warning.main" }} />
               {rating.toFixed(1)}

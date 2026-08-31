@@ -278,10 +278,11 @@ const OrdersList = () => {
   };
 
   const handleDeleteOrder = async (orderId) => {
-    if (window.confirm("Are you sure you want to delete this order? (Backend route must be implemented manually)")) {
+    if (window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
       try {
         await fetch(`http://localhost:3000/api/v1/orders/${orderId}`, {
           method: 'DELETE',
+          credentials: 'include'
         });
         dispatch(fetchOrders(sellerId));
       } catch (err) {
