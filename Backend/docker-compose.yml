@@ -1,4 +1,4 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   # ==========================================
@@ -34,122 +34,172 @@ services:
       - localmart_network
 
   # ==========================================
+  # 1.5 ELASTICSEARCH & KIBANA (NEW)
+  # ==========================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.1
+    container_name: localmart_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    networks:
+      - localmart_network
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.1
+    container_name: localmart_kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - localmart_network
+
+  # ==========================================
   # 2. MICROSERVICES 
   # ==========================================
-  auth-service:
-    container_name: auth_service
+  search-service:
+    container_name: localmart_search_service
     build: 
       context: .
-      dockerfile: ./Services/auth-service/Dockerfile
-    env_file: ./Services/auth-service/.env
-    networks:
-      - localmart_network
-
-  user-service:
-    container_name: user_service
-    build: 
-      context: .
-      dockerfile: ./Services/user-service/Dockerfile
-    env_file: ./Services/user-service/.env
-    networks:
-      - localmart_network
-
-  product-service:
-    container_name: product_service
-    build: 
-      context: .
-      dockerfile: ./Services/product-service/Dockerfile
-    env_file: ./Services/product-service/.env
-    networks:
-      - localmart_network
-
-  order-service:
-    container_name: order_service
-    build: 
-      context: .
-      dockerfile: ./Services/order-service/Dockerfile
-    env_file: ./Services/order-service/.env
-    networks:
-      - localmart_network
-
-  payment-service:
-    container_name: payment_service
-    build: 
-      context: .
-      dockerfile: ./Services/payment-service/Dockerfile
-    env_file: ./Services/payment-service/.env
-    networks:
-      - localmart_network
-
-  cart-service:
-    container_name: cart_service
-    build: 
-      context: .
-      dockerfile: ./Services/cart-service/Dockerfile
-    env_file: ./Services/cart-service/.env
-    networks:
-      - localmart_network
-
-  inventory-service:
-    container_name: inventory_service
-    build: 
-      context: .
-      dockerfile: ./Services/inventory-service/Dockerfile
-    env_file: ./Services/inventory-service/.env
-    networks:
-      - localmart_network
-
-  delivery-service:
-    container_name: delivery_service
-    build: 
-      context: .
-      dockerfile: ./Services/delivery-service/Dockerfile
-    env_file: ./Services/delivery-service/.env
-    networks:
-      - localmart_network
-
-  notification-service:
-    container_name: notification_service
-    build: 
-      context: .
-      dockerfile: ./Services/notification-service/Dockerfile
-    env_file: ./Services/notification-service/.env
-    networks:
-      - localmart_network
-
-  # ==========================================
-  # 3. API GATEWAY
-  # ==========================================
-  api-gateway:
-    container_name: api_gateway
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+      dockerfile: ./Services/search-service/Dockerfile
     ports:
-      - "80:3000"
+      - "3010:3010"
     environment:
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - USER_SERVICE_URL=http://user-service:3002
-      - PRODUCT_SERVICE_URL=http://product-service:3003
-      - ORDER_SERVICE_URL=http://order-service:3004
-      - PAYMENT_SERVICE_URL=http://payment-service:3005
-      - CART_SERVICE_URL=http://cart-service:3006
-      - INVENTORY_SERVICE_URL=http://inventory-service:3007
-      - DELIVERY_SERVICE_URL=http://delivery-service:3008
-      - NOTIFICATION_SERVICE_URL=http://notification-service:3009
+      - PORT=3010
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - KAFKA_BROKER=kafka:9092
     depends_on:
-      - auth-service
-      - user-service
-      - product-service
-      - order-service
-      - payment-service
-      - cart-service
-      - inventory-service
-      - delivery-service
-      - notification-service
+      - elasticsearch
+      - kafka
     networks:
       - localmart_network
+
+  # ==========================================
+  # --- TEMPORARILY COMMENTED OUT SERVICES ---
+  # ==========================================
+
+  # auth-service:
+  #   container_name: auth_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/auth-service/Dockerfile
+  #   env_file: ./Services/auth-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # user-service:
+  #   container_name: user_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/user-service/Dockerfile
+  #   env_file: ./Services/user-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # product-service:
+  #   container_name: product_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/product-service/Dockerfile
+  #   env_file: ./Services/product-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # order-service:
+  #   container_name: order_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/order-service/Dockerfile
+  #   env_file: ./Services/order-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # payment-service:
+  #   container_name: payment_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/payment-service/Dockerfile
+  #   env_file: ./Services/payment-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # cart-service:
+  #   container_name: cart_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/cart-service/Dockerfile
+  #   env_file: ./Services/cart-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # inventory-service:
+  #   container_name: inventory_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/inventory-service/Dockerfile
+  #   env_file: ./Services/inventory-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # delivery-service:
+  #   container_name: delivery_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/delivery-service/Dockerfile
+  #   env_file: ./Services/delivery-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # notification-service:
+  #   container_name: notification_service
+  #   build: 
+  #     context: .
+  #     dockerfile: ./Services/notification-service/Dockerfile
+  #   env_file: ./Services/notification-service/.env
+  #   networks:
+  #     - localmart_network
+
+  # api-gateway:
+  #   container_name: api_gateway
+  #   build:
+  #     context: ./api-gateway
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "80:3000"
+  #   environment:
+  #     - AUTH_SERVICE_URL=http://auth-service:3001
+  #     - USER_SERVICE_URL=http://user-service:3002
+  #     - PRODUCT_SERVICE_URL=http://product-service:3003
+  #     - ORDER_SERVICE_URL=http://order-service:3004
+  #     - PAYMENT_SERVICE_URL=http://payment-service:3005
+  #     - CART_SERVICE_URL=http://cart-service:3006
+  #     - INVENTORY_SERVICE_URL=http://inventory-service:3007
+  #     - DELIVERY_SERVICE_URL=http://delivery-service:3008
+  #     - NOTIFICATION_SERVICE_URL=http://notification-service:3009
+  #   depends_on:
+  #     - auth-service
+  #     - user-service
+  #     - product-service
+  #     - order-service
+  #     - payment-service
+  #     - cart-service
+  #     - inventory-service
+  #     - delivery-service
+  #     - notification-service
+  #   networks:
+  #     - localmart_network
 
 networks:
   localmart_network:
     driver: bridge
+
+volumes:
+  es_data:

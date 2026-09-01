@@ -24,6 +24,7 @@ import MyOrdersPage from "./orders/MyOrdersPage";
 import AuthInitializer from "./AuthPages/AuthInitializer";
 import SellerSignupPage from "./AuthPages/SellerSignupPage";
 import Navbar from "./HomePage/Navbar";
+import SearchResultsPage from "./search/SearchResultsPage";
 import "./App.css";
 
 function App() {
@@ -108,6 +109,16 @@ function App() {
         />
 
         <Route
+          path="/search"
+          element={
+            <SearchResultsPage
+              onAddToCart={handleAddToCart}
+              themeMode={themeMode}
+            />
+          }
+        />
+
+        <Route
           path="/login"
           element={
             <LoginPage
@@ -173,6 +184,17 @@ function App() {
           path="/product/:id"
           element={
             <ProductDetailPage
+              onAddToCart={handleAddToCart}
+              themeMode={themeMode}
+            />
+          }
+        />
+
+        {/* Search Results Page */}
+        <Route
+          path="/search"
+          element={
+            <SearchResultsPage
               onAddToCart={handleAddToCart}
               themeMode={themeMode}
             />
