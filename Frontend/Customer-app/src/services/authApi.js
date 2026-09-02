@@ -1,5 +1,5 @@
 export const loginUser = async (credentials) => {
-  const response = await fetch("http://localhost:3000/api/v1/auth/login", {
+  const response = await fetch("http://127.0.0.1:3000/api/v1/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -23,7 +23,7 @@ export const loginUser = async (credentials) => {
 };
 
 export const refreshTokenApi = async () => {
-  const response = await fetch("http://localhost:3000/api/v1/auth/refresh", {
+  const response = await fetch("http://127.0.0.1:3000/api/v1/auth/refresh", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -46,7 +46,7 @@ export const refreshTokenApi = async () => {
 };
 
 export const resendOtpApi = async (email) => {
-  const response = await fetch("http://localhost:3000/api/v1/auth/resend-otp", {
+  const response = await fetch("http://127.0.0.1:3000/api/v1/auth/resend-otp", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -69,7 +69,7 @@ export const resendOtpApi = async (email) => {
 };
 
 export const logoutUserApi = async () => {
-  const response = await fetch("http://localhost:3000/api/v1/auth/logout", {
+  const response = await fetch("http://127.0.0.1:3000/api/v1/auth/logout", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -88,7 +88,7 @@ export const logoutUserApi = async () => {
 
 export const getCurrentUser = async () => {
   try {
-    return await fetchWithAuth("http://localhost:3000/api/v1/auth/me");
+    return await fetchWithAuth("http://127.0.0.1:3000/api/v1/auth/me");
   } catch (error) {
     // Return null when unauthenticated on initial boot
     return null;

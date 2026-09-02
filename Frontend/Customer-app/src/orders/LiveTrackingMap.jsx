@@ -61,7 +61,7 @@ export default function LiveTrackingMap({ orderId, storeLocation, customerLocati
     if (!partnerId) return;
     const fetchPartnerDetails = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/users/internal/${partnerId}`);
+        const res = await fetch(`http://127.0.0.1:3000/api/v1/users/internal/${partnerId}`);
         const data = await res.json();
         if (data.success && data.profile) {
           setPartnerDetails(data.profile);

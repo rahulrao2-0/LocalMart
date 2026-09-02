@@ -24,7 +24,7 @@ export const searchProducts = async (params) => {
  */
 export const getAutocompleteSuggestions = async (q, limit = 7) => {
   const queryParams = new URLSearchParams({ q, limit }).toString();
-  return await apiRequest(`/search/products/autocomplete?${queryParams}`);
+  return await apiRequest(`/search/autocomplete?${queryParams}`);
 };
 
 /**

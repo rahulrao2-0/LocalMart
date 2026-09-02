@@ -84,7 +84,7 @@ export default function VerificationPage({ themeMode }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/v1/auth/verify-email", {
+      const response = await fetch("http://127.0.0.1:3000/api/v1/auth/verify-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

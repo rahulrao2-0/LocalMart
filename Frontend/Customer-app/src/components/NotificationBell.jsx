@@ -33,7 +33,7 @@ export default function NotificationBell() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(`http://localhost:3000/api/v1/notifications?userId=${userId}&unreadOnly=true`, {
+        const res = await fetch(`http://127.0.0.1:3000/api/v1/notifications?userId=${userId}&unreadOnly=true`, {
           credentials: 'include',
           headers
         });
@@ -42,7 +42,7 @@ export default function NotificationBell() {
           setNotifications(data.data || []);
         }
         
-        const countRes = await fetch(`http://localhost:3000/api/v1/notifications/unread?userId=${userId}`, {
+        const countRes = await fetch(`http://127.0.0.1:3000/api/v1/notifications/unread?userId=${userId}`, {
           credentials: 'include',
           headers
         });
@@ -81,7 +81,7 @@ export default function NotificationBell() {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      await fetch(`http://localhost:3000/api/v1/notifications/read-all?userId=${userId}`, {
+      await fetch(`http://127.0.0.1:3000/api/v1/notifications/read-all?userId=${userId}`, {
         method: 'PUT',
         credentials: 'include',
         headers

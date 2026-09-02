@@ -18,7 +18,7 @@ export const deleteProfileApi = async () => {
 
 // Upload profile avatar to Cloudinary via user-service
 export const uploadAvatarApi = async (formData) => {
-  const response = await fetch("http://localhost:3000/api/v1/users/profile/avatar", {
+  const response = await fetch("http://127.0.0.1:3000/api/v1/users/profile/avatar", {
     method: "POST",
     credentials: "include",
     body: formData,

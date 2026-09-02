@@ -170,8 +170,8 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
           const lat = defaultAddress.lat;
           const lng = defaultAddress.lng;
           const availUrl = lat && lng 
-            ? `http://localhost:3000/api/v1/delivery/availability?lat=${lat}&lng=${lng}`
-            : `http://localhost:3000/api/v1/delivery/availability`;
+            ? `http://127.0.0.1:3000/api/v1/delivery/availability?lat=${lat}&lng=${lng}`
+            : `http://127.0.0.1:3000/api/v1/delivery/availability`;
 
           const availRes = await fetch(availUrl, {
             credentials: "include",
@@ -190,7 +190,7 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
       }
 
       // 1. Create Order in Backend via API Gateway (Port 3000)
-      const orderRes = await fetch("http://localhost:3000/api/v1/orders/", {
+      const orderRes = await fetch("http://127.0.0.1:3000/api/v1/orders/", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -240,7 +240,7 @@ export default function CartPage({ cart = [], onUpdateQuantity, onRemoveFromCart
 
         handler: async (response) => {
           try {
-            const verifyRes = await fetch("http://localhost:3000/api/v1/payments/verify", {
+            const verifyRes = await fetch("http://127.0.0.1:3000/api/v1/payments/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

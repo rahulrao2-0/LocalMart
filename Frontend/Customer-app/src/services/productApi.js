@@ -1,5 +1,5 @@
 // src/services/productApi.js
-const API_BASE_URL = 'http://localhost:3000/api/v1'; // Adjusted port to 3000 (API Gateway)
+const API_BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Adjusted port to 3000 (API Gateway)
 
 export const fetchProducts = async (page = 1, category = "", keyword = "") => {
   try {

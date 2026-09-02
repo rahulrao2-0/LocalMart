@@ -185,6 +185,17 @@ app.use(
   })
 );
 
+// Proxy for search API endpoints (/api/v1/search)
+app.use(
+  createProxyMiddleware({
+    pathFilter: "/api/v1/search",
+    target: process.env.SEARCH_SERVICE_URL || "http://localhost:4004",
+    changeOrigin: true,
+    pathRewrite: { "^/api/v1/search": "/api/search" },
+    /* on: { error: handleProxyError } */
+  })
+);
+
 app.listen(3000, () => {
   console.log("API Gateway running on port 3000");
 });

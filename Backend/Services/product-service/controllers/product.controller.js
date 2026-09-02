@@ -10,9 +10,9 @@ export const getProducts = async (req, res) => {
     const { keyword, category, status, sellerId, page, limit } = req.query;
     console.log("Seller=Id in product-service",sellerId)
 
-    // Set defaults: page 1, limit 2
+    // Set defaults: page 1, limit 12
     const pageNum = Number(page) || 1;
-    const limitNum = Number(limit) || 2;
+    const limitNum = Number(limit) || 12;
 
     // Create a dynamic cache key based on the query parameters
     const cacheKey = `products:page:${pageNum}:limit:${limitNum}:cat:${category || 'all'}:kw:${keyword || 'none'}:seller:${sellerId || 'all'}`;

@@ -1,6 +1,6 @@
 // src/services/api.js
 
-const BASE_URL = "http://localhost:3000/api/v1";
+const BASE_URL = "http://127.0.0.1:3000/api/v1";
 
 let isRefreshing = false;
 let refreshPromise = null;
@@ -84,4 +84,4 @@ export const apiRequest = async (
   } catch {
     return null;
   }
-};
+};

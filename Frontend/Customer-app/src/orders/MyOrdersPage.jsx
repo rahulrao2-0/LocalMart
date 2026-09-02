@@ -125,7 +125,7 @@ export default function MyOrdersPage({ themeMode }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/orders/user/${userId}`, {
+      const res = await fetch(`http://127.0.0.1:3000/api/v1/orders/user/${userId}`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -175,7 +175,7 @@ export default function MyOrdersPage({ themeMode }) {
 
     try {
       const orderId = selectedOrder._id || selectedOrder.id;
-      const res = await fetch(`http://localhost:3000/api/v1/orders/${orderId}/cancel`, {
+      const res = await fetch(`http://127.0.0.1:3000/api/v1/orders/${orderId}/cancel`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -109,7 +109,7 @@ export default function LocalNeighborhoodMap({
   useEffect(() => {
     const fetchShops = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/v1/sellers/all");
+        const response = await fetch("http://127.0.0.1:3000/api/v1/sellers/all");
         const result = await response.json();
         
         if (result.success && result.data) {

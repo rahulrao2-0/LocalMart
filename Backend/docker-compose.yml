@@ -5,13 +5,13 @@ services:
   # 1. INFRASTRUCTURE 
   # ==========================================
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     container_name: localmart_redis
     networks:
       - localmart_network
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: apache/kafka
     container_name: localmart_kafka
     ports:
       - "9092:9092"

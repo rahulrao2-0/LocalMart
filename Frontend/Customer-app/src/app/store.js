@@ -17,4 +17,4 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware().concat(reduxLoggerMiddleware),
-});
+});

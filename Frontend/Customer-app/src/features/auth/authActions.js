@@ -60,4 +60,4 @@ export const checkAuth = () => async (dispatch) => {
     dispatch(setLoading(false));
   }
 };
-
+
